@@ -1,6 +1,5 @@
 import logging
 import argparse
-
 class SimulatorInterface:
     def __init__(self, node_id='!f1d5a925', short_name='SIM', long_name='Simulator'):
         self.myInfo = type('MyInfo', (), {'my_node_num': int(node_id.replace('!', '0x'), 16)})()
@@ -15,7 +14,7 @@ class SimulatorInterface:
         self.allowed_nodes = []
 
     def sendText(self, text, destinationId=None, wantAck=False, wantResponse=False):
-        print(f"BBS: {text}")
+        print(f"\033[96mBBS: {text}\033[0m")
         return type('Packet', (), {'id': 'simulator_packet'})()
 
     def close(self):
@@ -47,7 +46,8 @@ def main():
 
     while True:
         try:
-            message = input(f"{interface.nodes[args.node_id]['user']['longName']} ({interface.nodes[args.node_id]['user']['shortName']}): ")
+            prompt = f"\033[93m{interface.nodes[args.node_id]['user']['longName']} ({interface.nodes[args.node_id]['user']['shortName']}): \033[0m"
+            message = input(prompt)
             process_message(interface.myInfo.my_node_num, message, interface)
         except (KeyboardInterrupt, EOFError):
             print("\nExiting simulator.")
