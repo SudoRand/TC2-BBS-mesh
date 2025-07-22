@@ -68,7 +68,23 @@ def main():
         interface = get_simulator_interface(system_config)
         # In simulator mode, we run the simulator's main loop and exit.
         from bbs_simulator import main as simulator_main
+        import sys
+
+        # Preserve the original sys.argv
+        original_argv = sys.argv
+
+        # Create a new argv for the simulator
+        simulator_argv = [original_argv[0]]
+        if args.no_log:
+            simulator_argv.append('--no-log')
+
+        # Set sys.argv to the new argv
+        sys.argv = simulator_argv
+
         simulator_main()
+
+        # Restore the original sys.argv
+        sys.argv = original_argv
         return
     else:
         interface = get_interface(system_config)

@@ -26,13 +26,15 @@ def main():
     parser.add_argument("--node-id", default='!f1d5a925', help="Node ID of the simulator")
     parser.add_argument("--short-name", default='SIM', help="Short name of the simulator node")
     parser.add_argument("--long-name", default='Simulator', help="Long name of the simulator node")
+    parser.add_argument("--no-log", action="store_true", help="Suppress logging output")
 
     # This is a bit of a hack to allow the simulator to be launched from server.py
     # without parsing the server's command-line arguments.
     args, _ = parser.parse_known_args()
 
 
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    if not args.no_log:
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     from db_operations import initialize_database
     from message_processing import process_message
