@@ -42,10 +42,15 @@ def init_cli_parser() -> argparse.Namespace:
         default=None)
     
     parser.add_argument(
-        "--mqtt-topic", '-t', 
+        "--mqtt-topic", '-t',
         action="store",
         help="MQTT topic to subscribe",
         default='meshtastic.receive')
+
+    parser.add_argument(
+        "--no-log",
+        action="store_true",
+        help="Suppress logging output to the terminal")
     #
     # Add extra arguments here
     #...

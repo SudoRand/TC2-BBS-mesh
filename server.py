@@ -21,21 +21,22 @@ from js8call_integration import JS8CallClient
 from message_processing import on_receive
 from pubsub import pub
 
-# General logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+def setup_logging():
+    # General logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
-# JS8Call logging
-js8call_logger = logging.getLogger('js8call')
-js8call_logger.setLevel(logging.DEBUG)
-js8call_handler = logging.StreamHandler()
-js8call_handler.setLevel(logging.DEBUG)
-js8call_formatter = logging.Formatter('%(asctime)s - JS8Call - %(levelname)s - %(message)s', '%Y-%m-%d %H:%M:%S')
-js8call_handler.setFormatter(js8call_formatter)
-js8call_logger.addHandler(js8call_handler)
+    # JS8Call logging
+    js8call_logger = logging.getLogger('js8call')
+    js8call_logger.setLevel(logging.DEBUG)
+    js8call_handler = logging.StreamHandler()
+    js8call_handler.setLevel(logging.DEBUG)
+    js8call_formatter = logging.Formatter('%(asctime)s - JS8Call - %(levelname)s - %(message)s', '%Y-%m-%d %H:%M:%S')
+    js8call_handler.setFormatter(js8call_formatter)
+    js8call_logger.addHandler(js8call_handler)
 
 def display_banner():
     banner = """
@@ -52,6 +53,10 @@ Meshtastic Version
 def main():
     display_banner()
     args = init_cli_parser()
+
+    if not args.no_log:
+        setup_logging()
+
     config_file = None
     if args.config is not None:
         config_file = args.config
