@@ -117,17 +117,17 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                 handlers = board_action_handlers
             elif state and state['command'] == 'JS8CALL_MENU':
                 handle_js8call_steps(sender_id, message, state['step'], interface, state)
-                return
+                return get_user_state(sender_id)
             elif state and state['command'] == 'GROUP_MESSAGES':
                 handle_group_message_selection(sender_id, message, state['step'], state, interface)
-                return
+                return get_user_state(sender_id)
             else:
                 handlers = main_menu_handlers
 
             if message_lower == 'x':
                 # Reset to main menu state
                 handle_help_command(sender_id, interface)
-                return
+                return get_user_state(sender_id)
 
             if message_lower in handlers:
                 if state and state['command'] in ['BULLETIN_ACTION', 'BULLETIN_READ', 'BULLETIN_POST', 'BULLETIN_POST_CONTENT']:
@@ -174,6 +174,7 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                     handle_help_command(sender_id, interface)
             else:
                 handle_help_command(sender_id, interface)
+    return get_user_state(sender_id)
 
 
 def on_receive(packet, interface):
