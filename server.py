@@ -15,27 +15,28 @@ other BBS servers listed in the config.ini file.
 import logging
 import time
 
-from config_init import initialize_config, get_interface, init_cli_parser, merge_config
+from config_init import initialize_config, get_interface, init_cli_parser, merge_config, get_simulator_interface
 from db_operations import initialize_database
 from js8call_integration import JS8CallClient
 from message_processing import on_receive
 from pubsub import pub
 
-# General logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+def setup_logging():
+    # General logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
-# JS8Call logging
-js8call_logger = logging.getLogger('js8call')
-js8call_logger.setLevel(logging.DEBUG)
-js8call_handler = logging.StreamHandler()
-js8call_handler.setLevel(logging.DEBUG)
-js8call_formatter = logging.Formatter('%(asctime)s - JS8Call - %(levelname)s - %(message)s', '%Y-%m-%d %H:%M:%S')
-js8call_handler.setFormatter(js8call_formatter)
-js8call_logger.addHandler(js8call_handler)
+    # JS8Call logging
+    js8call_logger = logging.getLogger('js8call')
+    js8call_logger.setLevel(logging.DEBUG)
+    js8call_handler = logging.StreamHandler()
+    js8call_handler.setLevel(logging.DEBUG)
+    js8call_formatter = logging.Formatter('%(asctime)s - JS8Call - %(levelname)s - %(message)s', '%Y-%m-%d %H:%M:%S')
+    js8call_handler.setFormatter(js8call_formatter)
+    js8call_logger.addHandler(js8call_handler)
 
 def display_banner():
     banner = """
@@ -52,6 +53,10 @@ Meshtastic Version
 def main():
     display_banner()
     args = init_cli_parser()
+
+    if not args.no_log:
+        setup_logging()
+
     config_file = None
     if args.config is not None:
         config_file = args.config
@@ -59,7 +64,30 @@ def main():
 
     merge_config(system_config, args)
 
-    interface = get_interface(system_config)
+    if system_config.get('interface_type') == 'simulator':
+        interface = get_simulator_interface(system_config)
+        # In simulator mode, we run the simulator's main loop and exit.
+        from bbs_simulator import main as simulator_main
+        import sys
+
+        # Preserve the original sys.argv
+        original_argv = sys.argv
+
+        # Create a new argv for the simulator
+        simulator_argv = [original_argv[0]]
+        if args.no_log:
+            simulator_argv.append('--no-log')
+
+        # Set sys.argv to the new argv
+        sys.argv = simulator_argv
+
+        simulator_main()
+
+        # Restore the original sys.argv
+        sys.argv = original_argv
+        return
+    else:
+        interface = get_interface(system_config)
     interface.bbs_nodes = system_config['bbs_nodes']
     interface.allowed_nodes = system_config['allowed_nodes']
 

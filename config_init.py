@@ -25,7 +25,7 @@ def init_cli_parser() -> argparse.Namespace:
     parser.add_argument(
         "--interface-type", "-i",
         action="store",
-        choices=['serial', 'tcp'],
+        choices=['serial', 'tcp', 'simulator'],
         help="Node interface type",
         default=None)
     
@@ -42,10 +42,15 @@ def init_cli_parser() -> argparse.Namespace:
         default=None)
     
     parser.add_argument(
-        "--mqtt-topic", '-t', 
+        "--mqtt-topic", '-t',
         action="store",
         help="MQTT topic to subscribe",
         default='meshtastic.receive')
+
+    parser.add_argument(
+        "--no-log",
+        action="store_true",
+        help="Suppress logging output to the terminal")
     #
     # Add extra arguments here
     #...
@@ -177,3 +182,21 @@ def get_interface(system_config:dict[str, Any]) -> meshtastic.stream_interface.S
         except PermissionError as e:
             print(f"PermissionError: {e}. Retrying in 5 seconds...")
             time.sleep(5)
+
+
+def get_simulator_interface(system_config: dict[str, Any]) -> Any:
+    """
+    Function returns an instance of the SimulatorInterface.
+
+    Args:
+        system_config (dict[str, Any]): A dict with system configuration.
+
+    Returns:
+        Any: An instance of SimulatorInterface
+    """
+    from bbs_simulator import SimulatorInterface
+    return SimulatorInterface(
+        node_id=system_config.get('node_id', '!f1d5a925'),
+        short_name=system_config.get('short_name', 'SIM'),
+        long_name=system_config.get('long_name', 'Simulator')
+    )
