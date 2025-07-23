@@ -88,9 +88,8 @@ class TestBBS(unittest.TestCase):
         self.mock_get_mail_content = self.get_mail_content_patcher.start()
         self.mock_get_mail_content.return_value = ('MOCK', '2024-01-01', 'Test Subject', 'Test Content', '1234')
 
-        self.get_bulletin_content_patcher = patch('db_operations.get_bulletin_content')
-        self.mock_get_bulletin_content = self.get_bulletin_content_patcher.start()
-        self.mock_get_bulletin_content.return_value = ('MOCK', '2024-01-01', 'Test Subject', 'Test Content', '1234')
+        self.get_bulletin_content_patcher = patch('db_operations.get_bulletin_content', side_effect=self.mock_get_bulletin_content)
+        self.mock_get_bulletin_content_mock = self.get_bulletin_content_patcher.start()
 
 
     def tearDown(self):
@@ -119,6 +118,16 @@ class TestBBS(unittest.TestCase):
         call_args, _ = self.mock_send_message.call_args
         self.assertIn("TC² BBS", call_args[0])
         self.assertEqual(state['command'], 'MAIN_MENU')
+
+    def test_quick_commands_menu(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'q', self.interface)
+        self.mock_send_message.assert_called_with(unittest.mock.ANY, sender_id, self.interface)
+        # Check that the quick commands menu is displayed
+        call_args, _ = self.mock_send_message.call_args
+        self.assertIn("QUICK COMMANDS", call_args[0])
 
     def test_bbs_menu(self):
         sender_id = 1
@@ -177,7 +186,7 @@ class TestBBS(unittest.TestCase):
         call_args, _ = last_call
         self.assertIn("Mail has been posted", call_args[0])
 
-    def test_read_mail(self):
+    def test_read_and_delete_mail(self):
         sender_id = 1
         recipient_id = 2
         self.mock_get_node_id.return_value = '!another_mock_node_id'
@@ -199,19 +208,27 @@ class TestBBS(unittest.TestCase):
         call_args, _ = last_call
         self.assertIn("Test Content", call_args[0])
 
-    def test_post_bulletin(self):
+        # Delete the mail
+        state = self.message_processing.process_message(recipient_id, 'd', self.interface)
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_id, self.interface)
+        # Get the last call
+        last_call = self.mock_send_message.call_args_list[-1]
+        call_args, _ = last_call
+        self.assertIn("deleted", call_args[0])
+
+    def _test_post_bulletin(self, board_char, board_name):
         sender_id = 1
         self.mock_get_node_id.return_value = '!a_mock_node_id'
         # Start the bulletin posting process
         state = self.message_processing.process_message(sender_id, 'help', self.interface)
         state = self.message_processing.process_message(sender_id, 'b', self.interface)
         state = self.message_processing.process_message(sender_id, 'b', self.interface)
-        state = self.message_processing.process_message(sender_id, 'g', self.interface)
+        state = self.message_processing.process_message(sender_id, board_char, self.interface)
         state = self.message_processing.process_message(sender_id, 'p', self.interface)
         # Enter subject
-        state = self.message_processing.process_message(sender_id, 'Test Subject', self.interface)
+        state = self.message_processing.process_message(sender_id, f'Test Subject for {board_name}', self.interface)
         # Enter message
-        state = self.message_processing.process_message(sender_id, 'This is a test message.', self.interface)
+        state = self.message_processing.process_message(sender_id, f'This is a test message for {board_name}.', self.interface)
         # End message
         state = self.message_processing.process_message(sender_id, 'end', self.interface)
 
@@ -222,17 +239,22 @@ class TestBBS(unittest.TestCase):
         call_args, _ = last_call
         self.assertIn("has been posted", call_args[0])
 
-    def test_read_bulletin(self):
+    def mock_get_bulletin_content(self, bulletin_id):
+        c = self.conn.cursor()
+        c.execute("SELECT sender_short_name, date, subject, content, unique_id FROM bulletins WHERE id = ?", (bulletin_id,))
+        return c.fetchone()
+
+    def _test_read_bulletin(self, board_char, board_name):
         sender_id = 1
         self.mock_get_node_id.return_value = '!a_mock_node_id'
 
-        db_operations.add_bulletin('General', 'MOCK', 'Test Subject', 'Test Content', [], self.interface)
+        db_operations.add_bulletin(board_name, 'MOCK', f'Test Subject for {board_name}', f'This is a test message for {board_name}.', [], self.interface)
 
         # Start the bulletin reading process
         state = self.message_processing.process_message(sender_id, 'help', self.interface)
         state = self.message_processing.process_message(sender_id, 'b', self.interface)
         state = self.message_processing.process_message(sender_id, 'b', self.interface)
-        state = self.message_processing.process_message(sender_id, 'g', self.interface)
+        state = self.message_processing.process_message(sender_id, board_char, self.interface)
         state = self.message_processing.process_message(sender_id, 'r', self.interface)
         # Select bulletin to read
         state = self.message_processing.process_message(sender_id, '1', self.interface)
@@ -242,7 +264,119 @@ class TestBBS(unittest.TestCase):
         # Get the last call
         last_call = self.mock_send_message.call_args_list[-2]
         call_args, _ = last_call
-        self.assertIn("Test Content", call_args[0])
+        self.assertIn(f"This is a test message for {board_name}.", call_args[0])
+
+    def test_general_bulletin(self):
+        self._test_post_bulletin('g', 'General')
+        self._test_read_bulletin('g', 'General')
+
+    def test_info_bulletin(self):
+        self._test_post_bulletin('i', 'Info')
+        self._test_read_bulletin('i', 'Info')
+
+    def test_news_bulletin(self):
+        self._test_post_bulletin('n', 'News')
+        self._test_read_bulletin('n', 'News')
+
+    def test_urgent_bulletin(self):
+        self._test_post_bulletin('u', 'Urgent')
+        self._test_read_bulletin('u', 'Urgent')
+
+    def test_channel_directory(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the channel directory
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'b', self.interface)
+        state = self.message_processing.process_message(sender_id, 'c', self.interface)
+        self.mock_send_message.assert_called_with(unittest.mock.ANY, sender_id, self.interface)
+        # Check that the channel directory is displayed
+        call_args, _ = self.mock_send_message.call_args
+        self.assertIn("CHANNEL DIRECTORY", call_args[0])
+
+    def test_post_channel(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Start the channel posting process
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'b', self.interface)
+        state = self.message_processing.process_message(sender_id, 'c', self.interface)
+        state = self.message_processing.process_message(sender_id, 'p', self.interface)
+        # Enter channel name
+        state = self.message_processing.process_message(sender_id, 'Test Channel', self.interface)
+        # Enter channel URL
+        state = self.message_processing.process_message(sender_id, 'http://test.channel', self.interface)
+
+        # Check that the channel was posted
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        # Get the last call
+        last_call = self.mock_send_message.call_args_list[-2]
+        call_args, _ = last_call
+        self.assertIn("has been added", call_args[0])
+
+    def test_stats_menu(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the stats menu
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'u', self.interface)
+        state = self.message_processing.process_message(sender_id, 's', self.interface)
+        self.mock_send_message.assert_called_with(unittest.mock.ANY, sender_id, self.interface)
+        # Check that the stats menu is displayed
+        call_args, _ = self.mock_send_message.call_args
+        self.assertIn("Stats Menu", call_args[0])
+
+    def test_node_stats(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the node stats
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'u', self.interface)
+        state = self.message_processing.process_message(sender_id, 's', self.interface)
+        state = self.message_processing.process_message(sender_id, 'n', self.interface)
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        # Check that the node stats are displayed
+        call_args, _ = self.mock_send_message.call_args_list[-2]
+        self.assertIn("Total nodes seen", call_args[0])
+
+    def test_hardware_stats(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the hardware stats
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'u', self.interface)
+        state = self.message_processing.process_message(sender_id, 's', self.interface)
+        state = self.message_processing.process_message(sender_id, 'h', self.interface)
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        # Check that the hardware stats are displayed
+        call_args, _ = self.mock_send_message.call_args_list[-2]
+        self.assertIn("Hardware Models", call_args[0])
+
+    def test_role_stats(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the role stats
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'u', self.interface)
+        state = self.message_processing.process_message(sender_id, 's', self.interface)
+        state = self.message_processing.process_message(sender_id, 'r', self.interface)
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        # Check that the role stats are displayed
+        call_args, _ = self.mock_send_message.call_args_list[-2]
+        self.assertIn("Roles", call_args[0])
+
+    def test_wall_of_shame(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        self.interface.nodes['!a_mock_node_id']['deviceMetrics'] = {'batteryLevel': 10}
+        # Go to the wall of shame
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'u', self.interface)
+        state = self.message_processing.process_message(sender_id, 'w', self.interface)
+        self.mock_send_message.assert_called_with(unittest.mock.ANY, sender_id, self.interface)
+        # Check that the wall of shame is displayed
+        call_args, _ = self.mock_send_message.call_args
+        self.assertIn("battery levels below 20%", call_args[0])
 
 
 if __name__ == '__main__':
