@@ -4,6 +4,8 @@ import os
 import sys
 import configparser
 import sqlite3
+import tempfile
+import shutil
 import importlib
 
 # Add the parent directory to the Python path
@@ -31,6 +33,11 @@ class MockInterface:
 
 class TestBBS(unittest.TestCase):
     def setUp(self):
+        # Create a temporary directory
+        self.test_dir = tempfile.mkdtemp()
+        self.original_cwd = os.getcwd()
+        os.chdir(self.test_dir)
+
         # Create a dummy config.ini file
         config = configparser.ConfigParser()
         config['menu'] = {
@@ -47,6 +54,8 @@ class TestBBS(unittest.TestCase):
 
         # Reload the command_handlers module to pick up the new config
         global command_handlers, message_processing, db_operations
+        # Add the parent directory of the original cwd to the Python path
+        sys.path.append(os.path.abspath(os.path.join(self.original_cwd)))
         import command_handlers
         import message_processing
         import db_operations
@@ -105,9 +114,9 @@ class TestBBS(unittest.TestCase):
         # Close the database connection
         self.conn.close()
 
-        # Remove the dummy files
-        os.remove('config.ini')
-        os.remove('fortunes.txt')
+        # Change back to the original directory and remove the temporary directory
+        os.chdir(self.original_cwd)
+        shutil.rmtree(self.test_dir)
 
     def test_main_menu(self):
         sender_id = 1
