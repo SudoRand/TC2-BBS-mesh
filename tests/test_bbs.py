@@ -7,6 +7,7 @@ import sqlite3
 import tempfile
 import shutil
 import importlib
+import logging
 
 # Add the parent directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -41,9 +42,10 @@ class TestBBS(unittest.TestCase):
         # Create a dummy config.ini file
         config = configparser.ConfigParser()
         config['menu'] = {
-            'main_menu_items': 'Q,B,U,X',
+            'main_menu_items': 'Q,B,U,G,X',
             'bbs_menu_items': 'M,B,C,J,X',
-            'utilities_menu_items': 'S,F,W,X'
+            'utilities_menu_items': 'S,F,W,X',
+            'games_menu_items': 'T,X'
         }
         with open('config.ini', 'w') as configfile:
             config.write(configfile)
@@ -386,6 +388,27 @@ class TestBBS(unittest.TestCase):
         # Check that the wall of shame is displayed
         call_args, _ = self.mock_send_message.call_args
         self.assertIn("battery levels below 20%", call_args[0])
+
+    def test_tic_tac_toe_win(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+
+        from modules.Games.tic_tac_toe import handle_tic_tac_toe_steps, init_game
+        game_state = init_game("pvp")
+        state = {'command': 'TIC_TAC_TOE', 'step': 2, 'game': game_state}
+
+        # Simulate a game where X wins
+        handle_tic_tac_toe_steps(sender_id, '1', 2, state, self.interface) # X
+        handle_tic_tac_toe_steps(sender_id, '4', 2, state, self.interface) # O
+        handle_tic_tac_toe_steps(sender_id, '2', 2, state, self.interface) # X
+        handle_tic_tac_toe_steps(sender_id, '5', 2, state, self.interface) # O
+        handle_tic_tac_toe_steps(sender_id, '3', 2, state, self.interface) # X wins
+
+        # Check that the win message is displayed
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        last_call = self.mock_send_message.call_args_list[-2]
+        call_args, _ = last_call
+        self.assertIn("Congratulations! X wins!", call_args[0])
 
 
 if __name__ == '__main__':
