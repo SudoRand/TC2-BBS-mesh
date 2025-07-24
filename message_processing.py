@@ -64,6 +64,7 @@ board_action_handlers = {
 
 def process_message(sender_id, message, interface, is_sync_message=False):
     state = get_user_state(sender_id)
+    logging.info(f"process_message: sender_id={sender_id}, message={message}, state={state}")
     message_lower = message.lower().strip()
     message_strip = message.strip()
 

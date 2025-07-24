@@ -102,6 +102,8 @@ class TestBBS(unittest.TestCase):
         self.get_bulletin_content_patcher = patch('db_operations.get_bulletin_content', side_effect=self.mock_get_bulletin_content)
         self.mock_get_bulletin_content_mock = self.get_bulletin_content_patcher.start()
 
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
     def tearDown(self):
         # Stop the patcher
@@ -392,24 +394,24 @@ class TestBBS(unittest.TestCase):
     def test_tic_tac_toe_win(self):
         sender_id = 1
         self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the games menu
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'g', self.interface)
+        state = self.message_processing.process_message(sender_id, 't', self.interface)
+        state = self.message_processing.process_message(sender_id, '1', self.interface) # pvp
 
-        from modules.Games.tic_tac_toe import handle_tic_tac_toe_steps, init_game
-        game_state = init_game("pvp")
-        state = {'command': 'TIC_TAC_TOE', 'step': 2, 'game': game_state}
+        # Simulate a game where X wins
+        self.message_processing.process_message(sender_id, '1', self.interface)
+        self.message_processing.process_message(sender_id, '4', self.interface)
+        self.message_processing.process_message(sender_id, '2', self.interface)
+        self.message_processing.process_message(sender_id, '5', self.interface)
+        self.message_processing.process_message(sender_id, '3', self.interface)
 
-        with patch('modules.Games.tic_tac_toe.send_message') as mock_send_message:
-            # Simulate a game where X wins
-            handle_tic_tac_toe_steps(sender_id, '1', 2, state, self.interface) # X
-            handle_tic_tac_toe_steps(sender_id, '4', 2, state, self.interface) # O
-            handle_tic_tac_toe_steps(sender_id, '2', 2, state, self.interface) # X
-            handle_tic_tac_toe_steps(sender_id, '5', 2, state, self.interface) # O
-            handle_tic_tac_toe_steps(sender_id, '3', 2, state, self.interface) # X wins
-
-            # Check that the win message is displayed
-            mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
-            last_call = mock_send_message.call_args_list[-1]
-            call_args, _ = last_call
-            self.assertIn("Congratulations! X wins!", call_args[0])
+        # Check that the win message is displayed
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        last_call = self.mock_send_message.call_args_list[-2]
+        call_args, _ = last_call
+        self.assertIn("Congratulations! X wins!", call_args[0])
 
 
 if __name__ == '__main__':

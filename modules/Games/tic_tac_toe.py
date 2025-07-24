@@ -122,11 +122,13 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
                     game["winner"] = winner
                     response = f"{render_board(game['board'])}\n\nComputer wins!\n\nType 'X' to return to the games menu."
                     send_message(response, sender_id, interface)
+                    update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 1})
                     return
 
                 if game["turns"] == 9:
                     response = f"{render_board(game['board'])}\n\nIt's a draw!\n\nType 'X' to return to the games menu."
                     send_message(response, sender_id, interface)
+                    update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 1})
                     return
 
                 game["current_player"] = "X"
