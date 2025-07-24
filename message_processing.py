@@ -8,8 +8,10 @@ from command_handlers import (
     handle_channel_directory_command, handle_channel_directory_steps, handle_send_mail_command,
     handle_read_mail_command, handle_check_mail_command, handle_delete_mail_confirmation, handle_post_bulletin_command,
     handle_check_bulletin_command, handle_read_bulletin_command, handle_read_channel_command,
-    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command
+    handle_post_channel_command, handle_list_channels_command, handle_quick_help_command,
+    handle_games_command
 )
+from modules.Games.tic_tac_toe import handle_tic_tac_toe_command, handle_tic_tac_toe_steps
 from db_operations import add_bulletin, add_mail, delete_bulletin, delete_mail, get_db_connection, add_channel
 from js8call_integration import handle_js8call_command, handle_js8call_steps, handle_group_message_selection
 from utils import get_user_state, get_node_short_name, get_node_id_from_num, send_message
@@ -18,6 +20,7 @@ main_menu_handlers = {
     "q": handle_quick_help_command,
     "b": lambda sender_id, interface: handle_help_command(sender_id, interface, 'bbs'),
     "u": lambda sender_id, interface: handle_help_command(sender_id, interface, 'utilities'),
+    "g": lambda sender_id, interface: handle_help_command(sender_id, interface, 'games'),
     "x": handle_help_command
 }
 
@@ -35,6 +38,12 @@ utilities_menu_handlers = {
     "f": handle_fortune_command,
     "w": handle_wall_of_shame_command,
     "x": handle_help_command
+}
+
+
+games_menu_handlers = {
+    "t": handle_tic_tac_toe_command,
+    "x": lambda sender_id, interface: handle_help_command(sender_id, interface, 'main')
 }
 
 
@@ -109,6 +118,8 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                     handlers = bbs_menu_handlers
                 elif menu_name == 'utilities':
                     handlers = utilities_menu_handlers
+                elif menu_name == 'games':
+                    handlers = games_menu_handlers
                 else:
                     handlers = main_menu_handlers
             elif state and state['command'] == 'BULLETIN_MENU':
@@ -170,6 +181,8 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                     handle_js8call_steps(sender_id, message, step, interface, state)
                 elif command == 'GROUP_MESSAGES':
                     handle_group_message_selection(sender_id, message, step, state, interface)
+                elif command == 'TIC_TAC_TOE':
+                    handle_tic_tac_toe_steps(sender_id, message, step, state, interface)
                 else:
                     handle_help_command(sender_id, interface)
             else:

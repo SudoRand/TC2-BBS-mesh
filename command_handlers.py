@@ -16,6 +16,7 @@ from utils import (
     get_node_short_name, send_message,
     update_user_state
 )
+from modules.Games.tic_tac_toe import handle_tic_tac_toe_command
 
 # Read the configuration for menu options
 config = configparser.ConfigParser()
@@ -24,6 +25,7 @@ config.read('config.ini')
 main_menu_items = config['menu']['main_menu_items'].split(',')
 bbs_menu_items = config['menu']['bbs_menu_items'].split(',')
 utilities_menu_items = config['menu']['utilities_menu_items'].split(',')
+games_menu_items = config['menu']['games_menu_items'].split(',')
 
 
 def build_menu(items, menu_name):
@@ -38,6 +40,10 @@ def build_menu(items, menu_name):
                 menu_str += "[B]BS\n"
         elif item.strip() == 'U':
             menu_str += "[U]tilities\n"
+        elif item.strip() == 'G':
+            menu_str += "[G]ames\n"
+        elif item.strip() == 'T':
+            menu_str += "[T]ic Tac Toe\n"
         elif item.strip() == 'X':
             menu_str += "E[X]IT\n"
         elif item.strip() == 'M':
@@ -61,11 +67,19 @@ def handle_help_command(sender_id, interface, menu_name=None):
             response = build_menu(bbs_menu_items, "📰BBS Menu📰")
         elif menu_name == 'utilities':
             response = build_menu(utilities_menu_items, "🛠️Utilities Menu🛠️")
+        elif menu_name == 'games':
+            response = build_menu(games_menu_items, "🎮Games Menu🎮")
     else:
         update_user_state(sender_id, {'command': 'MAIN_MENU', 'step': 1})  # Reset to main menu state
         mail = get_mail(get_node_id_from_num(sender_id, interface))
         response = build_menu(main_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)})")
     send_message(response, sender_id, interface)
+
+
+def handle_games_command(sender_id, interface):
+    response = build_menu(games_menu_items, "🎮Games Menu🎮")
+    send_message(response, sender_id, interface)
+    update_user_state(sender_id, {'command': 'MENU', 'menu': 'games', 'step': 1})
 
 def get_node_name(node_id, interface):
     node_info = interface.nodes.get(node_id)
