@@ -397,18 +397,19 @@ class TestBBS(unittest.TestCase):
         game_state = init_game("pvp")
         state = {'command': 'TIC_TAC_TOE', 'step': 2, 'game': game_state}
 
-        # Simulate a game where X wins
-        handle_tic_tac_toe_steps(sender_id, '1', 2, state, self.interface) # X
-        handle_tic_tac_toe_steps(sender_id, '4', 2, state, self.interface) # O
-        handle_tic_tac_toe_steps(sender_id, '2', 2, state, self.interface) # X
-        handle_tic_tac_toe_steps(sender_id, '5', 2, state, self.interface) # O
-        handle_tic_tac_toe_steps(sender_id, '3', 2, state, self.interface) # X wins
+        with patch('modules.Games.tic_tac_toe.send_message') as mock_send_message:
+            # Simulate a game where X wins
+            handle_tic_tac_toe_steps(sender_id, '1', 2, state, self.interface) # X
+            handle_tic_tac_toe_steps(sender_id, '4', 2, state, self.interface) # O
+            handle_tic_tac_toe_steps(sender_id, '2', 2, state, self.interface) # X
+            handle_tic_tac_toe_steps(sender_id, '5', 2, state, self.interface) # O
+            handle_tic_tac_toe_steps(sender_id, '3', 2, state, self.interface) # X wins
 
-        # Check that the win message is displayed
-        self.mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
-        last_call = self.mock_send_message.call_args_list[-2]
-        call_args, _ = last_call
-        self.assertIn("Congratulations! X wins!", call_args[0])
+            # Check that the win message is displayed
+            mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+            last_call = mock_send_message.call_args_list[-1]
+            call_args, _ = last_call
+            self.assertIn("Congratulations! X wins!", call_args[0])
 
 
 if __name__ == '__main__':
