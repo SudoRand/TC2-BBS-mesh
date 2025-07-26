@@ -391,28 +391,28 @@ class TestBBS(unittest.TestCase):
         call_args, _ = self.mock_send_message.call_args
         self.assertIn("battery levels below 20%", call_args[0])
 
-    def test_tic_tac_toe_win(self):
-        with patch('modules.Games.tic_tac_toe.send_message') as mock_send_message:
-            sender_id = 1
-            self.mock_get_node_id.return_value = '!a_mock_node_id'
-            # Go to the games menu
-            state = self.message_processing.process_message(sender_id, 'help', self.interface)
-            state = self.message_processing.process_message(sender_id, 'g', self.interface)
-            state = self.message_processing.process_message(sender_id, 't', self.interface)
-            state = self.message_processing.process_message(sender_id, '1', self.interface) # pvp
+    @patch('modules.Games.tic_tac_toe.send_message')
+    def test_tic_tac_toe_win(self, mock_send_message):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the games menu
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'g', self.interface)
+        state = self.message_processing.process_message(sender_id, 't', self.interface)
+        state = self.message_processing.process_message(sender_id, '1', self.interface) # pvp
 
-            # Simulate a game where X wins
-            self.message_processing.process_message(sender_id, '1', self.interface)
-            self.message_processing.process_message(sender_id, '4', self.interface)
-            self.message_processing.process_message(sender_id, '2', self.interface)
-            self.message_processing.process_message(sender_id, '5', self.interface)
-            self.message_processing.process_message(sender_id, '3', self.interface)
+        # Simulate a game where X wins
+        self.message_processing.process_message(sender_id, '1', self.interface)
+        self.message_processing.process_message(sender_id, '4', self.interface)
+        self.message_processing.process_message(sender_id, '2', self.interface)
+        self.message_processing.process_message(sender_id, '5', self.interface)
+        self.message_processing.process_message(sender_id, '3', self.interface)
 
-            # Check that the win message is displayed
-            mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
-            last_call = mock_send_message.call_args_list[-1]
-            call_args, _ = last_call
-            self.assertIn("Congratulations! X wins!", call_args[0])
+        # Check that the win message is displayed
+        mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        last_call = mock_send_message.call_args_list[-1]
+        call_args, _ = last_call
+        self.assertIn("Congratulations! X wins!", call_args[0])
 
 
 if __name__ == '__main__':
