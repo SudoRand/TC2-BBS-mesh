@@ -48,6 +48,16 @@ def initialize_database():
                     name TEXT NOT NULL,
                     url TEXT NOT NULL
                 );''')
+    c.execute('''CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    player_x TEXT,
+                    player_o TEXT,
+                    board TEXT,
+                    current_player TEXT,
+                    winner TEXT,
+                    status TEXT,
+                    unique_id TEXT NOT NULL UNIQUE
+                );''')
     conn.commit()
     print("Database schema initialized.")
 
@@ -164,3 +174,47 @@ def get_sender_id_by_mail_id(mail_id):
     if result:
         return result[0]
     return None
+
+
+def create_tic_tac_toe_game(player_x, unique_id=None):
+    conn = get_db_connection()
+    c = conn.cursor()
+    if not unique_id:
+        unique_id = str(uuid.uuid4())
+    board = '[" ", " ", " ", " ", " ", " ", " ", " ", " "]'  # JSON string of the board
+    c.execute(
+        "INSERT INTO tic_tac_toe_games (player_x, board, current_player, status, unique_id) VALUES (?, ?, ?, ?, ?)",
+        (player_x, board, player_x, "waiting", unique_id)
+    )
+    conn.commit()
+    return c.lastrowid
+
+def get_open_tic_tac_toe_games():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, player_x, unique_id FROM tic_tac_toe_games WHERE status = 'waiting'")
+    return c.fetchall()
+
+def join_tic_tac_toe_game(game_id, player_o):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("UPDATE tic_tac_toe_games SET player_o = ?, status = 'in_progress' WHERE id = ?", (player_o, game_id))
+    conn.commit()
+
+def get_tic_tac_toe_game_by_id(game_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM tic_tac_toe_games WHERE id = ?", (game_id,))
+    return c.fetchone()
+
+def update_tic_tac_toe_board(game_id, board, current_player):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("UPDATE tic_tac_toe_games SET board = ?, current_player = ? WHERE id = ?", (board, current_player, game_id))
+    conn.commit()
+
+def end_tic_tac_toe_game(game_id, winner):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("UPDATE tic_tac_toe_games SET winner = ?, status = 'finished' WHERE id = ?", (winner, game_id))
+    conn.commit()

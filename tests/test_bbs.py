@@ -71,7 +71,10 @@ class TestBBS(unittest.TestCase):
 
 
         # Set up a temporary database for testing
-        self.conn = sqlite3.connect(':memory:')
+        self.db_path = 'test_bulletins.db'
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+        self.conn = sqlite3.connect(self.db_path)
         self.get_db_connection_patcher = patch('db_operations.get_db_connection')
         self.mock_get_db_connection = self.get_db_connection_patcher.start()
         self.mock_get_db_connection.return_value = self.conn
@@ -413,6 +416,49 @@ class TestBBS(unittest.TestCase):
         last_call = mock_send_message.call_args_list[-1]
         call_args, _ = last_call
         self.assertIn("Congratulations! X wins!", call_args[0])
+
+    @patch('modules.Games.tic_tac_toe.send_message')
+    def test_tic_tac_toe_remote_game(self, mock_send_message):
+        user1_id = 1
+        user2_id = 2
+
+        def get_node_id_side_effect(num):
+            if num == user1_id:
+                return '!a_mock_node_id'
+            elif num == user2_id:
+                return '!another_mock_node_id'
+            return None
+        self.mock_get_node_id.side_effect = get_node_id_side_effect
+
+        # user1 starts a remote game
+        self.message_processing.process_message(user1_id, 'g', self.interface)
+        self.message_processing.process_message(user1_id, 't', self.interface)
+        self.message_processing.process_message(user1_id, '3', self.interface)
+        self.message_processing.process_message(user1_id, '1', self.interface)
+
+        # user2 joins the game
+        self.message_processing.process_message(user2_id, 'g', self.interface)
+        self.message_processing.process_message(user2_id, 't', self.interface)
+        self.message_processing.process_message(user2_id, '3', self.interface)
+        self.message_processing.process_message(user2_id, '2', self.interface)
+        self.message_processing.process_message(user2_id, '1', self.interface)
+
+        # user1 makes a winning move
+        self.message_processing.process_message(user1_id, '1', self.interface)
+        self.message_processing.process_message(user2_id, '2', self.interface)
+        self.message_processing.process_message(user1_id, '5', self.interface)
+        self.message_processing.process_message(user2_id, '3', self.interface)
+        self.message_processing.process_message(user1_id, '9', self.interface)
+
+        # Check that the win message is displayed for user2
+        # We need to check all calls to mock_send_message to find the one we want
+        found_win_message = False
+        for call in mock_send_message.call_args_list:
+            if "Congratulations! You win!" in call[0][0]:
+                self.assertEqual(int(call[0][1]), user2_id)
+                found_win_message = True
+                break
+        self.assertTrue(found_win_message, "Win message not found for user2")
 
 
 if __name__ == '__main__':
