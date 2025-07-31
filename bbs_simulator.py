@@ -8,6 +8,17 @@ class SimulatorInterface:
                 'num': self.myInfo.my_node_num,
                 'user': {'shortName': short_name, 'longName': long_name},
                 'deviceMetrics': {'batteryLevel': 100},
+            },
+            # Add more nodes for the simulator
+            '!f1d5a926': {
+                'num': 0xf1d5a926,
+                'user': {'shortName': 'NODE2', 'longName': 'Second Node'},
+                'deviceMetrics': {'batteryLevel': 90},
+            },
+            '!f1d5a927': {
+                'num': 0xf1d5a927,
+                'user': {'shortName': 'NODE3', 'longName': 'Third Node'},
+                'deviceMetrics': {'batteryLevel': 80},
             }
         }
         self.bbs_nodes = []
@@ -48,7 +59,33 @@ def main():
         try:
             prompt = f"\033[93m{interface.nodes[args.node_id]['user']['longName']} ({interface.nodes[args.node_id]['user']['shortName']}): \033[0m"
             message = input(prompt)
-            process_message(interface.myInfo.my_node_num, message, interface)
+
+            sender_num = interface.myInfo.my_node_num
+            processed_message = message
+
+            if message.startswith('@'):
+                parts = message.split(':', 1)
+                if len(parts) == 2:
+                    from_node_short_name = parts[0][1:].strip()
+                    actual_message = parts[1].strip()
+
+                    sender_node_info = None
+                    # Find the node by shortName
+                    for node_id, node_info in interface.nodes.items():
+                        if node_info['user']['shortName'].lower() == from_node_short_name.lower():
+                            sender_node_info = node_info
+                            break
+
+                    if sender_node_info:
+                        sender_num = sender_node_info['num']
+                        processed_message = actual_message
+                        # Optional: give feedback to the user
+                        print(f"\033[95mSending as {sender_node_info['user']['longName']} ({sender_node_info['user']['shortName']})\033[0m")
+                    else:
+                        print(f"\033[91mError: Node '{from_node_short_name}' not found.\033[0m")
+                        continue  # continue to next loop iteration, skipping process_message
+
+            process_message(sender_num, processed_message, interface)
         except (KeyboardInterrupt, EOFError):
             print("\nExiting simulator.")
             break

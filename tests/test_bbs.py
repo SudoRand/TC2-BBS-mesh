@@ -460,6 +460,46 @@ class TestBBS(unittest.TestCase):
                 break
         self.assertTrue(found_win_message, "Win message not found for user2")
 
+    @patch('message_processing.process_message')
+    @patch('builtins.input', side_effect=['@NODE2: help', EOFError])
+    @patch('argparse.ArgumentParser.parse_known_args')
+    def test_simulator_send_from_another_node(self, mock_parse_args, mock_input, mock_process_message):
+        # Set up mock arguments
+        mock_args = MagicMock()
+        mock_args.node_id = '!f1d5a925'
+        mock_args.short_name = 'SIM'
+        mock_args.long_name = 'Simulator'
+        mock_args.no_log = True
+        mock_parse_args.return_value = (mock_args, [])
+
+        import bbs_simulator
+        importlib.reload(bbs_simulator) # Reload to make sure patches are applied
+
+        bbs_simulator.main()
+
+        # NODE2's num is 0xf1d5a926
+        expected_sender_num = 0xf1d5a926
+        mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
+
+    @patch('message_processing.process_message')
+    @patch('builtins.input', side_effect=['@UNKNOWN: help', EOFError])
+    @patch('argparse.ArgumentParser.parse_known_args')
+    def test_simulator_send_from_unknown_node(self, mock_parse_args, mock_input, mock_process_message):
+        # Set up mock arguments
+        mock_args = MagicMock()
+        mock_args.node_id = '!f1d5a925'
+        mock_args.short_name = 'SIM'
+        mock_args.long_name = 'Simulator'
+        mock_args.no_log = True
+        mock_parse_args.return_value = (mock_args, [])
+
+        import bbs_simulator
+        importlib.reload(bbs_simulator)
+
+        bbs_simulator.main()
+
+        mock_process_message.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()
