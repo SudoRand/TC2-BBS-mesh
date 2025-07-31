@@ -1,6 +1,10 @@
 import unittest
 import sqlite3
 import json
+import os
+import tempfile
+import shutil
+from unittest.mock import patch
 from db_operations import (
     initialize_database,
     create_tic_tac_toe_game,
@@ -15,15 +19,21 @@ from modules.Games.tic_tac_toe import check_winner
 class TestTicTacToe(unittest.TestCase):
 
     def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.original_cwd = os.getcwd()
+        os.chdir(self.test_dir)
         self.db_path = 'test_bulletins.db'
         self.conn = sqlite3.connect(self.db_path)
-        self.c = self.conn.cursor()
+        self.get_db_connection_patcher = patch('db_operations.get_db_connection')
+        self.mock_get_db_connection = self.get_db_connection_patcher.start()
+        self.mock_get_db_connection.return_value = self.conn
         initialize_database()
 
     def tearDown(self):
+        self.get_db_connection_patcher.stop()
         self.conn.close()
-        import os
-        os.remove(self.db_path)
+        os.chdir(self.original_cwd)
+        shutil.rmtree(self.test_dir)
 
     def test_create_game(self):
         game_id = create_tic_tac_toe_game("player1")
