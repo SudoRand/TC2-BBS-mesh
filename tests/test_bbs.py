@@ -89,6 +89,13 @@ class TestBBS(unittest.TestCase):
 
         self.get_node_id_patcher = patch('utils.get_node_id_from_num')
         self.mock_get_node_id = self.get_node_id_patcher.start()
+        def get_node_id_side_effect(num, interface):
+            if num == 1:
+                return '!a_mock_node_id'
+            if num == 2:
+                return '!another_mock_node_id'
+            return None
+        self.mock_get_node_id.side_effect = get_node_id_side_effect
 
         self.get_node_short_name_patcher = patch('utils.get_node_short_name')
         self.mock_get_node_short_name = self.get_node_short_name_patcher.start()
@@ -96,7 +103,7 @@ class TestBBS(unittest.TestCase):
 
         self.get_node_info_patcher = patch('utils.get_node_info')
         self.mock_get_node_info = self.get_node_info_patcher.start()
-        self.mock_get_node_info.return_value = [{'num': 2, 'shortName': 'MOCK2', 'longName': 'Mock Node 2'}]
+        self.mock_get_node_info.return_value = [{'num': 2, 'id': '!another_mock_node_id', 'shortName': 'MOCK2', 'longName': 'Mock Node 2'}]
 
         self.get_mail_content_patcher = patch('db_operations.get_mail_content')
         self.mock_get_mail_content = self.get_mail_content_patcher.start()
@@ -205,9 +212,8 @@ class TestBBS(unittest.TestCase):
     def test_read_and_delete_mail(self):
         sender_id = 1
         recipient_id = 2
-        self.mock_get_node_id.return_value = '!another_mock_node_id'
 
-        db_operations.add_mail('!a_mock_node_id', 'MOCK', '!another_mock_node_id', 'Test Subject', 'Test Content', [], self.interface)
+        db_operations.add_mail(1, 'MOCK', 2, 'Test Subject', 'Test Content', [], self.interface)
 
         # Start the mail reading process
         state = self.message_processing.process_message(recipient_id, 'help', self.interface)
