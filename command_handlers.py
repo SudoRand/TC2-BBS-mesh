@@ -71,7 +71,7 @@ def handle_help_command(sender_id, interface, menu_name=None):
             response = build_menu(games_menu_items, "🎮Games Menu🎮")
     else:
         update_user_state(sender_id, {'command': 'MAIN_MENU', 'step': 1})  # Reset to main menu state
-        mail = get_mail(sender_id)
+        mail = get_mail(get_node_id_from_num(sender_id, interface))
         response = build_menu(main_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)})")
     send_message(response, sender_id, interface)
 
@@ -252,7 +252,8 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
     if step == 1:
         choice = message.lower()
         if choice == 'r':
-            mail = get_mail(sender_id)
+            sender_node_id = get_node_id_from_num(sender_id, interface)
+            mail = get_mail(sender_node_id)
             if mail:
                 send_message(f"You have {len(mail)} mail messages. Select a message number to read:", sender_id, interface)
                 for msg in mail:
@@ -270,7 +271,8 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
     elif step == 2:
         mail_id = int(message)
         try:
-            sender, date, subject, content, unique_id = get_mail_content(mail_id, sender_id)
+            sender_node_id = get_node_id_from_num(sender_id, interface)
+            sender, date, subject, content, unique_id = get_mail_content(mail_id, sender_node_id)
             send_message(f"Date: {date}\nFrom: {sender}\nSubject: {subject}\n{content}", sender_id, interface)
             send_message("What would you like to do with this message?\n[K]eep  [D]elete  [R]eply", sender_id, interface)
             update_user_state(sender_id, {'command': 'MAIL', 'step': 4, 'mail_id': mail_id, 'unique_id': unique_id, 'sender': sender, 'subject': subject, 'content': content})
@@ -286,11 +288,10 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
             send_message("I'm unable to find that node in my database.", sender_id, interface)
             handle_mail_command(sender_id, interface)
         elif len(nodes) == 1:
-            recipient_num = nodes[0]['num']
-            recipient_node_id = nodes[0]['id']
-            recipient_name = get_node_name(recipient_node_id, interface)
+            recipient_id = nodes[0]['num']
+            recipient_name = get_node_name(recipient_id, interface)
             send_message(f"What is the subject of your message to {recipient_name}?\nKeep it short.", sender_id, interface)
-            update_user_state(sender_id, {'command': 'MAIL', 'step': 5, 'recipient_num': recipient_num, 'recipient_node_id': recipient_node_id})
+            update_user_state(sender_id, {'command': 'MAIL', 'step': 5, 'recipient_id': recipient_id})
         else:
             send_message("There are multiple nodes with that short name. Which one would you like to leave a message for?", sender_id, interface)
             for i, node in enumerate(nodes):
@@ -300,7 +301,8 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
     elif step == 4:
         if message.lower() == "d":
             unique_id = state['unique_id']
-            delete_mail(unique_id, sender_id, bbs_nodes, interface)
+            sender_node_id = get_node_id_from_num(sender_id, interface)
+            delete_mail(unique_id, sender_node_id, bbs_nodes, interface)
             send_message("The message has been deleted 🗑️", sender_id, interface)
             update_user_state(sender_id, None)
         elif message.lower() == "r":
@@ -314,35 +316,32 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
     elif step == 5:
         subject = message
         send_message("Send your message. You can send it in multiple messages if it's too long for one.\nSend a single message with END when you're done", sender_id, interface)
-        update_user_state(sender_id, {'command': 'MAIL', 'step': 7, 'recipient_num': state['recipient_num'], 'recipient_node_id': state['recipient_node_id'], 'subject': subject, 'content': ''})
+        update_user_state(sender_id, {'command': 'MAIL', 'step': 7, 'recipient_id': state['recipient_id'], 'subject': subject, 'content': ''})
 
     elif step == 6:
         selected_node_index = int(message)
         selected_node = state['nodes'][selected_node_index]
-        recipient_num = selected_node['num']
-        recipient_node_id = selected_node['id']
-        recipient_name = get_node_name(recipient_node_id, interface)
+        recipient_id = selected_node['num']
+        recipient_name = get_node_name(recipient_id, interface)
         send_message(f"What is the subject of your message to {recipient_name}?\nKeep it short.", sender_id, interface)
-        update_user_state(sender_id, {'command': 'MAIL', 'step': 5, 'recipient_num': recipient_num, 'recipient_node_id': recipient_node_id})
+        update_user_state(sender_id, {'command': 'MAIL', 'step': 5, 'recipient_id': recipient_id})
 
     elif step == 7:
         if message.lower() == "end":
             if 'reply_to_mail_id' in state:
-                recipient_node_id = get_sender_id_by_mail_id(state['reply_to_mail_id'])
-                recipient_num = interface.nodes.get(recipient_node_id)['num']
+                recipient_id = get_sender_id_by_mail_id(state['reply_to_mail_id'])  # Get the sender ID from the mail ID
             else:
-                recipient_num = state.get('recipient_num')
-                recipient_node_id = state.get('recipient_node_id')
-
+                recipient_id = state.get('recipient_id')
             subject = state['subject']
             content = state['content']
-            recipient_name = get_node_name(recipient_node_id, interface)
+            recipient_name = get_node_name(recipient_id, interface)
+
             sender_short_name = get_node_short_name(get_node_id_from_num(sender_id, interface), interface)
-            unique_id = add_mail(sender_id, sender_short_name, recipient_num, subject, content, bbs_nodes, interface)
+            unique_id = add_mail(get_node_id_from_num(sender_id, interface), sender_short_name, recipient_id, subject, content, bbs_nodes, interface)
             send_message(f"Mail has been posted to the mailbox of {recipient_name}.\n(╯°□°)╯📨📬", sender_id, interface)
 
             notification_message = f"You have a new mail message from {sender_short_name}. Check your mailbox by responding to this message with CM."
-            send_message(notification_message, recipient_num, interface)
+            send_message(notification_message, recipient_id, interface)
 
             update_user_state(sender_id, None)
             update_user_state(sender_id, {'command': 'MAIL', 'step': 8})
@@ -439,17 +438,16 @@ def handle_send_mail_command(sender_id, message, interface, bbs_nodes):
                          interface)
             return
 
-        recipient_num = nodes[0]['num']
-        recipient_node_id = nodes[0]['id']
-        recipient_name = get_node_name(recipient_node_id, interface)
+        recipient_id = nodes[0]['num']
+        recipient_name = get_node_name(recipient_id, interface)
         sender_short_name = get_node_short_name(get_node_id_from_num(sender_id, interface), interface)
 
-        unique_id = add_mail(sender_id, sender_short_name, recipient_num, subject,
+        unique_id = add_mail(get_node_id_from_num(sender_id, interface), sender_short_name, recipient_id, subject,
                              content, bbs_nodes, interface)
         send_message(f"Mail has been sent to {recipient_name}.", sender_id, interface)
 
         notification_message = f"You have a new mail message from {sender_short_name}. Check your mailbox by responding to this message with CM."
-        send_message(notification_message, recipient_num, interface)
+        send_message(notification_message, recipient_id, interface)
 
     except Exception as e:
         logging.error(f"Error processing send mail command: {e}")
@@ -458,7 +456,8 @@ def handle_send_mail_command(sender_id, message, interface, bbs_nodes):
 
 def handle_check_mail_command(sender_id, interface):
     try:
-        mail = get_mail(sender_id)
+        sender_node_id = get_node_id_from_num(sender_id, interface)
+        mail = get_mail(sender_node_id)
         if not mail:
             send_message("You have no new messages.", sender_id, interface)
             return
@@ -486,7 +485,8 @@ def handle_read_mail_command(sender_id, message, state, interface):
             return
 
         mail_id = mail[message_number][0]
-        sender, date, subject, content, unique_id = get_mail_content(mail_id, sender_id)
+        sender_node_id = get_node_id_from_num(sender_id, interface)
+        sender, date, subject, content, unique_id = get_mail_content(mail_id, sender_node_id)
         response = f"Date: {date}\nFrom: {sender}\nSubject: {subject}\n\n{content}"
         send_message(response, sender_id, interface)
         send_message("What would you like to do with this message?\n[K]eep  [D]elete  [R]eply", sender_id, interface)
@@ -507,7 +507,8 @@ def handle_delete_mail_confirmation(sender_id, message, state, interface, bbs_no
 
         if choice == 'd':
             unique_id = state['unique_id']
-            delete_mail(unique_id, sender_id, bbs_nodes, interface)
+            sender_node_id = get_node_id_from_num(sender_id, interface)
+            delete_mail(unique_id, sender_node_id, bbs_nodes, interface)
             send_message("The message has been deleted 🗑️", sender_id, interface)
             update_user_state(sender_id, None)
         elif choice == 'r':

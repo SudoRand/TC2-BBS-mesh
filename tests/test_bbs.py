@@ -210,30 +210,31 @@ class TestBBS(unittest.TestCase):
         self.assertIn("Mail has been posted", call_args[0])
 
     def test_read_and_delete_mail(self):
-        sender_id = 1
-        recipient_id = 2
+        sender_id = '!a_mock_node_id'
+        recipient_id = '!another_mock_node_id'
+        recipient_num = 2
 
-        db_operations.add_mail(1, 'MOCK', 2, 'Test Subject', 'Test Content', [], self.interface)
+        db_operations.add_mail(sender_id, 'MOCK', recipient_id, 'Test Subject', 'Test Content', [], self.interface)
 
         # Start the mail reading process
-        state = self.message_processing.process_message(recipient_id, 'help', self.interface)
-        state = self.message_processing.process_message(recipient_id, 'b', self.interface)
-        state = self.message_processing.process_message(recipient_id, 'm', self.interface)
-        state = self.message_processing.process_message(recipient_id, 'r', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'help', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'b', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'm', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'r', self.interface)
         # Select mail to read
-        state = self.message_processing.process_message(recipient_id, '1', self.interface)
+        state = self.message_processing.process_message(recipient_num, '1', self.interface)
 
         # Check that the mail is displayed
-        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_id, self.interface)
-        # Get the last call
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_num, self.interface)
+        # Get the second to last call
         last_call = self.mock_send_message.call_args_list[-2]
         call_args, _ = last_call
         self.assertIn("Test Content", call_args[0])
 
         # Delete the mail
-        state = self.message_processing.process_message(recipient_id, 'd', self.interface)
-        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_id, self.interface)
-        # Get the last call
+        state = self.message_processing.process_message(recipient_num, 'd', self.interface)
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_num, self.interface)
+        # Get the second to last call
         last_call = self.mock_send_message.call_args_list[-1]
         call_args, _ = last_call
         self.assertIn("deleted", call_args[0])
