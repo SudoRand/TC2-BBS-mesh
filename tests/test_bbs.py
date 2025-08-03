@@ -203,7 +203,7 @@ class TestBBS(unittest.TestCase):
         state = self.message_processing.process_message(sender_id, 'end', self.interface)
 
         # Check that the mail was sent
-        self.mock_send_message.assert_any_call(unittest.mock.ANY, 2, self.interface)
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, '!another_mock_node_id', self.interface)
         # Get the last call
         last_call = self.mock_send_message.call_args_list[-2]
         call_args, _ = last_call

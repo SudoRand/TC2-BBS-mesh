@@ -2,9 +2,13 @@ import unittest
 import sqlite3
 import json
 import os
+import sys
 import tempfile
 import shutil
 from unittest.mock import patch
+
+# Add the parent directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from db_operations import (
     initialize_database,
     create_tic_tac_toe_game,
