@@ -22,6 +22,8 @@ from message_processing import on_receive
 from pubsub import pub
 
 def setup_logging():
+    global js8call_logger
+    
     # General logging
     logging.basicConfig(
         level=logging.INFO,
