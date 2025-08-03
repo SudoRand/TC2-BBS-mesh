@@ -34,9 +34,9 @@ def send_message(message, destination, interface):
 
 
 def get_node_info(interface, short_name):
-    nodes = [{'id': node_id, 'num': node['num'], 'shortName': node['user']['shortName'], 'longName': node['user']['longName']}
+    nodes = [{'num': node_id, 'shortName': node['user']['shortName'], 'longName': node['user']['longName']}
              for node_id, node in interface.nodes.items()
-             if 'user' in node and 'shortName' in node['user'] and node['user']['shortName'].lower() == short_name]
+             if node['user']['shortName'].lower() == short_name]
     return nodes
 
 
