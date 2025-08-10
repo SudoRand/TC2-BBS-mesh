@@ -12,12 +12,12 @@ class SimulatorInterface:
             # Add more nodes for the simulator
             '!f1d5a926': {
                 'num': 0xf1d5a926,
-                'user': {'shortName': 'NODE2', 'longName': 'Second Node'},
+                'user': {'shortName': 'SIM2', 'longName': 'Second Node'},
                 'deviceMetrics': {'batteryLevel': 90},
             },
             '!f1d5a927': {
                 'num': 0xf1d5a927,
-                'user': {'shortName': 'NODE3', 'longName': 'Third Node'},
+                'user': {'shortName': 'SIM3', 'longName': 'Third Node'},
                 'deviceMetrics': {'batteryLevel': 80},
             }
         }
@@ -63,14 +63,15 @@ def main():
             sender_num = interface.myInfo.my_node_num
             processed_message = message
 
-            if message.startswith('@'):
-                parts = message.split(':', 1)
-                if len(parts) == 2:
-                    from_node_short_name = parts[0][1:].strip()
-                    actual_message = parts[1].strip()
+            parts = message.split(':', 1)
+            if len(parts) == 2:
+                from_node_short_name = parts[0]
+                # Check if the message starts with a word of 4 characters or less, followed by a colon and a space
+                if len(from_node_short_name) <= 4 and not from_node_short_name.isspace() and parts[1].startswith(' '):
+                    actual_message = parts[1].lstrip()
 
-                    sender_node_info = None
                     # Find the node by shortName
+                    sender_node_info = None
                     for node_id, node_info in interface.nodes.items():
                         if node_info['user']['shortName'].lower() == from_node_short_name.lower():
                             sender_node_info = node_info
@@ -81,9 +82,7 @@ def main():
                         processed_message = actual_message
                         # Optional: give feedback to the user
                         print(f"\033[95mSending as {sender_node_info['user']['longName']} ({sender_node_info['user']['shortName']})\033[0m")
-                    else:
-                        print(f"\033[91mError: Node '{from_node_short_name}' not found.\033[0m")
-                        continue  # continue to next loop iteration, skipping process_message
+
 
             process_message(sender_num, processed_message, interface)
         except (KeyboardInterrupt, EOFError):

@@ -151,12 +151,12 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                 command = state['command']
                 step = state['step']
 
-                if command == 'MAIL':
+                if command == 'STATS':
+                    handle_stats_steps(sender_id, message, step, interface)
+                elif command == 'MAIL':
                     handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes)
                 elif command == 'BULLETIN':
                     handle_bb_steps(sender_id, message, step, state, interface, bbs_nodes)
-                elif command == 'STATS':
-                    handle_stats_steps(sender_id, message, step, interface)
                 elif command == 'CHANNEL_DIRECTORY':
                     handle_channel_directory_steps(sender_id, message, step, state, interface)
                 elif command == 'CHECK_MAIL':

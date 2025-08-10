@@ -235,7 +235,7 @@ class TestBBS(unittest.TestCase):
         state = self.message_processing.process_message(recipient_num, 'd', self.interface)
         self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_num, self.interface)
         # Get the second to last call
-        last_call = self.mock_send_message.call_args_list[-1]
+        last_call = self.mock_send_message.call_args_list[-2]
         call_args, _ = last_call
         self.assertIn("deleted", call_args[0])
 
@@ -468,7 +468,7 @@ class TestBBS(unittest.TestCase):
         self.assertTrue(found_win_message, "Win message not found for user2")
 
     @patch('message_processing.process_message')
-    @patch('builtins.input', side_effect=['@NODE2: help', EOFError])
+    @patch('builtins.input', side_effect=['SIM2: help', EOFError])
     @patch('argparse.ArgumentParser.parse_known_args')
     def test_simulator_send_from_another_node(self, mock_parse_args, mock_input, mock_process_message):
         # Set up mock arguments
@@ -484,12 +484,12 @@ class TestBBS(unittest.TestCase):
 
         bbs_simulator.main()
 
-        # NODE2's num is 0xf1d5a926
+        # SIM2's num is 0xf1d5a926
         expected_sender_num = 0xf1d5a926
         mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
 
     @patch('message_processing.process_message')
-    @patch('builtins.input', side_effect=['@UNKNOWN: help', EOFError])
+    @patch('builtins.input', side_effect=['UNKNOWN: help', EOFError])
     @patch('argparse.ArgumentParser.parse_known_args')
     def test_simulator_send_from_unknown_node(self, mock_parse_args, mock_input, mock_process_message):
         # Set up mock arguments
@@ -505,7 +505,9 @@ class TestBBS(unittest.TestCase):
 
         bbs_simulator.main()
 
-        mock_process_message.assert_not_called()
+        # The message should be processed as a regular message from the default user
+        expected_sender_num = 0xf1d5a925
+        mock_process_message.assert_called_once_with(expected_sender_num, 'UNKNOWN: help', unittest.mock.ANY)
 
 
 if __name__ == '__main__':
