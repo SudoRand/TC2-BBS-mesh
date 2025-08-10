@@ -229,14 +229,14 @@ class TestTicTacToe(unittest.TestCase):
         # Assert that the main menu is shown with the 'Return to Game' option
         self.assertEqual(mock_cmd_send_message.call_count, 1)
         menu_msg = mock_cmd_send_message.call_args[0][0]
-        self.assertIn("[R]eturn to Game", menu_msg)
+        self.assertIn("[RG]eturn to Game", menu_msg)
         self.assertNotIn("[G]ames", menu_msg)
 
-        # 4. Player 1 enters 'r' to resume the game
+        # 4. Player 1 enters 'rg' to resume the game
         state_p1 = get_user_state(p1_num) # State is now MAIN_MENU
         self.assertEqual(state_p1['command'], 'MAIN_MENU')
         from message_processing import main_menu_handlers
-        main_menu_handlers['r'](p1_num, mock_interface)
+        main_menu_handlers['rg'](p1_num, mock_interface)
 
         # Assert that the game board is redisplayed
         # Call count is 2: one for creating the game, one for resuming

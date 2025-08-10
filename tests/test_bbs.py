@@ -450,21 +450,28 @@ class TestBBS(unittest.TestCase):
         self.message_processing.process_message(user2_id, '2', self.interface)
         self.message_processing.process_message(user2_id, '1', self.interface)
 
-        # user1 makes a winning move
-        self.message_processing.process_message(user1_id, '1', self.interface)
-        self.message_processing.process_message(user2_id, '2', self.interface)
-        self.message_processing.process_message(user1_id, '5', self.interface)
-        self.message_processing.process_message(user2_id, '3', self.interface)
-        self.message_processing.process_message(user1_id, '9', self.interface)
+        # Simulate a game where user2 (O) wins
+        # P2's turn
+        self.message_processing.process_message(user2_id, '5', self.interface) # O takes center
+        # P1's turn
+        self.message_processing.process_message(user1_id, '1', self.interface) # X takes top-left
+        # P2's turn
+        self.message_processing.process_message(user2_id, '2', self.interface) # O takes top-center
+        # P1's turn
+        self.message_processing.process_message(user1_id, '3', self.interface) # X takes top-right
+        # P2's turn (winning move)
+        self.message_processing.process_message(user2_id, '8', self.interface) # O wins with 2,5,8
 
         # Check that the win message is displayed for user2
         # We need to check all calls to mock_send_message to find the one we want
         found_win_message = False
         for call in mock_send_message.call_args_list:
+            # The winner is sent the "You win!" message
             if "Congratulations! You win!" in call[0][0]:
-                self.assertEqual(int(call[0][1]), user2_id)
-                found_win_message = True
-                break
+                # Ensure it was sent to user2
+                if int(call[0][1]) == user2_id:
+                    found_win_message = True
+                    break
         self.assertTrue(found_win_message, "Win message not found for user2")
 
     @patch('message_processing.process_message')

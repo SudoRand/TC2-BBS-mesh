@@ -21,7 +21,7 @@ main_menu_handlers = {
     "b": lambda sender_id, interface: handle_help_command(sender_id, interface, 'bbs'),
     "u": lambda sender_id, interface: handle_help_command(sender_id, interface, 'utilities'),
     "g": lambda sender_id, interface: handle_help_command(sender_id, interface, 'games'),
-    "r": handle_return_to_game_command,
+    "rg": handle_return_to_game_command,
     "x": handle_help_command
 }
 
