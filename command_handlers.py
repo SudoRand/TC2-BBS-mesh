@@ -14,9 +14,9 @@ from db_operations import (
 from utils import (
     get_node_id_from_num, get_node_info,
     get_node_short_name, send_message,
-    update_user_state
+    update_user_state, get_user_state
 )
-from modules.Games.tic_tac_toe import handle_tic_tac_toe_command
+from modules.Games.tic_tac_toe import handle_tic_tac_toe_command, redisplay_game_board
 
 # Read the configuration for menu options
 config = configparser.ConfigParser()
@@ -42,6 +42,8 @@ def build_menu(items, menu_name):
             menu_str += "[U]tilities\n"
         elif item.strip() == 'G':
             menu_str += "[G]ames\n"
+        elif item.strip() == 'R':
+            menu_str += "[R]eturn to Game\n"
         elif item.strip() == 'T':
             menu_str += "[T]ic Tac Toe\n"
         elif item.strip() == 'X':
@@ -70,9 +72,23 @@ def handle_help_command(sender_id, interface, menu_name=None):
         elif menu_name == 'games':
             response = build_menu(games_menu_items, "🎮Games Menu🎮")
     else:
-        update_user_state(sender_id, {'command': 'MAIN_MENU', 'step': 1})  # Reset to main menu state
+        state = get_user_state(sender_id)
+        if not state or 'command' not in state or state['command'] != 'MAIN_MENU':
+            state = {'command': 'MAIN_MENU', 'step': 1}
+            update_user_state(sender_id, state)
+
+        current_menu_items = main_menu_items[:]
+        if state and 'active_game_id' in state:
+            if 'G' in current_menu_items:
+                # Replace 'G' with 'R'
+                g_index = current_menu_items.index('G')
+                current_menu_items[g_index] = 'R'
+            else:
+                # Or just add 'R' if 'G' isn't there for some reason
+                current_menu_items.append('R')
+
         mail = get_mail(get_node_id_from_num(sender_id, interface))
-        response = build_menu(main_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)})")
+        response = build_menu(current_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)})")
     send_message(response, sender_id, interface)
 
 
@@ -80,6 +96,19 @@ def handle_games_command(sender_id, interface):
     response = build_menu(games_menu_items, "🎮Games Menu🎮")
     send_message(response, sender_id, interface)
     update_user_state(sender_id, {'command': 'MENU', 'menu': 'games', 'step': 1})
+
+
+def handle_return_to_game_command(sender_id, interface):
+    state = get_user_state(sender_id)
+    if state and 'active_game_id' in state:
+        game_id = state['active_game_id']
+        # Update state to put user back in the game
+        update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
+        redisplay_game_board(sender_id, game_id, interface)
+    else:
+        # Should not happen if the menu is built correctly, but handle it just in case
+        send_message("You don't have an active game to return to.", sender_id, interface)
+        handle_help_command(sender_id, interface)
 
 def get_node_name(node_id, interface):
     node_info = interface.nodes.get(node_id)

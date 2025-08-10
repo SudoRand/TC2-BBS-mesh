@@ -9,7 +9,7 @@ from command_handlers import (
     handle_read_mail_command, handle_check_mail_command, handle_delete_mail_confirmation, handle_post_bulletin_command,
     handle_check_bulletin_command, handle_read_bulletin_command, handle_read_channel_command,
     handle_post_channel_command, handle_list_channels_command, handle_quick_help_command,
-    handle_games_command
+    handle_games_command, handle_return_to_game_command
 )
 from modules.Games.tic_tac_toe import handle_tic_tac_toe_command, handle_tic_tac_toe_steps
 from db_operations import add_bulletin, add_mail, delete_bulletin, delete_mail, get_db_connection, add_channel
@@ -21,6 +21,7 @@ main_menu_handlers = {
     "b": lambda sender_id, interface: handle_help_command(sender_id, interface, 'bbs'),
     "u": lambda sender_id, interface: handle_help_command(sender_id, interface, 'utilities'),
     "g": lambda sender_id, interface: handle_help_command(sender_id, interface, 'games'),
+    "r": handle_return_to_game_command,
     "x": handle_help_command
 }
 
