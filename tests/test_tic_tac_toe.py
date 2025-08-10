@@ -178,7 +178,7 @@ class TestTicTacToe(unittest.TestCase):
         handle_tic_tac_toe_steps(p1_num, str(game_id), state_p1['step'], state_p1, mock_interface)
         self.assertEqual(mock_send_message.call_count, 3)
         redisplay_msg = mock_send_message.call_args[0][0]
-        self.assertIn("It's not your turn.", redisplay_msg) # P2 is current player
+        self.assertIn(f"It's {p2_sn} (O)'s turn.", redisplay_msg)
 
     @patch('modules.Games.tic_tac_toe.send_message')
     def test_list_open_games_displays_short_name(self, mock_send_message):
@@ -234,7 +234,7 @@ class TestTicTacToe(unittest.TestCase):
         create_msg = mock_send_message.call_args[0][0]
         self.assertIn("New game started.", create_msg)
         self.assertIn(INSTRUCTION_BOARD, create_msg)
-        self.assertIn("You are X. Enter 1-9 to make your move, or [M]enu to exit.", create_msg)
+        self.assertIn("You are X. Enter 1-9 to make your move, or E[X]IT to pause.", create_msg)
         game_id = get_open_tic_tac_toe_games()[0][0]
 
         # 3. Player 1 makes first move
@@ -293,9 +293,9 @@ class TestTicTacToe(unittest.TestCase):
         handle_tic_tac_toe_steps(p1_num, "1", 10, state_p1, mock_interface)
         game_id = get_open_tic_tac_toe_games()[0][0]
 
-        # 3. Player 1 enters 'm' to pause the game and go to the menu
+        # 3. Player 1 enters 'x' to pause the game and go to the menu
         state_p1 = get_user_state(p1_num)
-        handle_tic_tac_toe_steps(p1_num, "m", state_p1['step'], state_p1, mock_interface)
+        handle_tic_tac_toe_steps(p1_num, "x", state_p1['step'], state_p1, mock_interface)
 
         # Assert that the main menu is shown with the 'Return to Game' option
         self.assertEqual(mock_cmd_send_message.call_count, 1)
@@ -313,7 +313,7 @@ class TestTicTacToe(unittest.TestCase):
         # Call count is 2: one for creating the game, one for resuming
         self.assertEqual(mock_game_send_message.call_count, 2)
         resume_msg = mock_game_send_message.call_args[0][0]
-        self.assertIn("It's your turn (X). Enter 1-9 to make your move, or [M]enu to exit.", resume_msg)
+        self.assertIn("It's your turn (X). Enter 1-9 to make your move, or E[X]IT to pause.", resume_msg)
 
 
 if __name__ == '__main__':

@@ -94,13 +94,15 @@ def redisplay_game_board(sender_id, game_id, interface):
 
     if str(sender_id) == current_player:
         player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
-        response = f"{INSTRUCTION_BOARD}\n\n{render_board(board, player_x_sn, player_o_sn)}\n\nIt's your turn ({player_symbol}). Enter 1-9 to make your move, or [M]enu to exit."
+        response = f"{INSTRUCTION_BOARD}\n\n{render_board(board, player_x_sn, player_o_sn)}\n\nIt's your turn ({player_symbol}). Enter 1-9 to make your move, or E[X]IT to pause."
         send_message(response, sender_id, interface)
     elif player_o is None and str(sender_id) == player_x:
-        response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nWaiting for an opponent to join. Or [M]enu to exit."
+        response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nWaiting for an opponent to join. Or E[X]IT to pause."
         send_message(response, sender_id, interface)
     else:
-        response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's not your turn. Or [M]enu to exit."
+        current_player_sn = player_x_sn if str(current_player) == str(player_x) else player_o_sn
+        current_player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
+        response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's {current_player_sn} ({current_player_symbol})'s turn. Or E[X]IT to pause."
         send_message(response, sender_id, interface)
 
 def handle_tic_tac_toe_command(sender_id, interface):
@@ -119,15 +121,11 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
     from command_handlers import handle_help_command
     message = message.strip().lower()
 
-    if message == 'm' and 'game_id' in state:
+    if message == 'x' and 'game_id' in state:
         game_id = state['game_id']
         new_state = {'command': 'MAIN_MENU', 'step': 1, 'active_game_id': game_id}
         update_user_state(sender_id, new_state)
         handle_help_command(sender_id, interface)
-        return
-
-    if message == 'x':
-        handle_help_command(sender_id, interface, 'games')
         return
 
     if step == 1:
@@ -241,7 +239,7 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             game_data = get_tic_tac_toe_game_by_id(game_id)
             board = json.loads(game_data[3])
             update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
-            response = f"New game started. Game ID: {game_id}.\n\n{INSTRUCTION_BOARD}\n\n{render_board(board)}\nYou are X. Enter 1-9 to make your move, or [M]enu to exit."
+            response = f"New game started. Game ID: {game_id}.\n\n{INSTRUCTION_BOARD}\n\n{render_board(board)}\nYou are X. Enter 1-9 to make your move, or E[X]IT to pause."
             send_message(response, sender_id, interface)
         elif message == "2":  # Join an existing game
             games = get_open_tic_tac_toe_games()
@@ -283,7 +281,7 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
 
             # Notify Player O (joiner)
             update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
-            response_o = f"You joined game {game_id}.\n\n{INSTRUCTION_BOARD}\n\n{board_str}\nIt's your turn (O). Enter 1-9 to make your move, or [M]enu to exit."
+            response_o = f"You joined game {game_id}.\n\n{INSTRUCTION_BOARD}\n\n{board_str}\nIt's your turn (O). Enter 1-9 to make your move, or E[X]IT to pause."
             send_message(response_o, sender_id, interface)
 
         except ValueError:
@@ -323,7 +321,9 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             position = int(message) - 1
 
             if str(sender_id) != current_player:
-                send_message("It's not your turn.", sender_id, interface)
+                current_player_sn = player_x_sn if str(current_player) == str(player_x) else player_o_sn
+                current_player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
+                send_message(f"It's {current_player_sn} ({current_player_symbol})'s turn.", sender_id, interface)
                 return
 
             if not (0 <= position < 9 and board[position] == " "):
@@ -395,13 +395,15 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
 
             if str(sender_id) == current_player:
                 player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
-                response = f"{INSTRUCTION_BOARD}\n\n{render_board(board, player_x_sn, player_o_sn)}\n\nIt's your turn ({player_symbol}). Enter 1-9 to make your move, or [M]enu to exit."
+                response = f"{INSTRUCTION_BOARD}\n\n{render_board(board, player_x_sn, player_o_sn)}\n\nIt's your turn ({player_symbol}). Enter 1-9 to make your move, or E[X]IT to pause."
                 send_message(response, sender_id, interface)
             elif player_o is None and str(sender_id) == player_x:
-                 response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nWaiting for an opponent to join. Or [M]enu to exit."
+                 response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nWaiting for an opponent to join. Or E[X]IT to pause."
                  send_message(response, sender_id, interface)
             else:
-                response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's not your turn. Or [M]enu to exit."
+                current_player_sn = player_x_sn if str(current_player) == str(player_x) else player_o_sn
+                current_player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
+                response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's {current_player_sn} ({current_player_symbol})'s turn. Or E[X]IT to pause."
                 send_message(response, sender_id, interface)
 
     elif step == 13: # Selecting a game to continue
