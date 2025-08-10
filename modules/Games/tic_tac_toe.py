@@ -20,7 +20,9 @@ INSTRUCTION_BOARD = (
     "---+---+---\n"
     " 4 | 5 | 6 \n"
     "---+---+---\n"
-    " 7 | 8 | 9 "
+    " 7 | 8 | 9 \n"
+    "\n"
+    "Move positions correspond to the numbers above."
 )
 
 def display_menu():
@@ -42,12 +44,11 @@ def init_game(mode):
 
 def render_board(board, player_x=None, player_o=None):
     """Render the game board as ASCII art with double underscores for empty cells."""
-    formatted_board = [cell if cell != " " else "__" for cell in board]
-    board_str = f" {formatted_board[0]} | {formatted_board[1]} | {formatted_board[2]} \n" \
-                "---+---+---\n" \
-                f" {formatted_board[3]} | {formatted_board[4]} | {formatted_board[5]} \n" \
-                "---+---+---\n" \
-                f" {formatted_board[6]} | {formatted_board[7]} | {formatted_board[8]} "
+    board_str = (f" {board[0]} | {board[1]} | {board[2]} \n" 
+                "---+---+---\n" 
+                f" {board[3]} | {board[4]} | {board[5]} \n" 
+                "---+---+---\n" 
+                f" {board[6]} | {board[7]} | {board[8]} ")
     if player_x and player_o:
         board_str += f"\n\nX: {player_x}\nO: {player_o}"
     return board_str
