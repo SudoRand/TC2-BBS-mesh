@@ -1,6 +1,7 @@
 import logging
 import argparse
 import re
+import readline
 class SimulatorInterface:
     def __init__(self, node_id='!f1d5a925', short_name='SIM', long_name='Simulator'):
         self.myInfo = type('MyInfo', (), {'my_node_num': int(node_id.replace('!', '0x'), 16)})()
@@ -56,37 +57,48 @@ def main():
 
     print("BBS Simulator Started. Type 'help' for a list of commands.")
 
+    last_sender_short_name = args.short_name
+
     while True:
         try:
-            prompt = f"\033[93m{interface.nodes[args.node_id]['user']['longName']} ({interface.nodes[args.node_id]['user']['shortName']}): \033[0m"
-            message = input(prompt)
+            pre_filled_prompt = f"{last_sender_short_name}: "
+
+            def startup_hook():
+                readline.insert_text(pre_filled_prompt)
+                readline.redisplay()
+
+            readline.set_startup_hook(startup_hook)
+            message = input('> ')
+            readline.set_startup_hook() # Clear hook
 
             # Use regex to match "short_name: message" format
             match = re.match(r'^(\S{1,4}):\s(.*)', message)
-            if match:
-                from_node_short_name, actual_message = match.groups()
+            if not match:
+                print("\033[91mError: Invalid input format. Must be 'SENDER: message'.\033[0m")
+                continue
 
-                # Find the node by shortName
-                sender_node_info = None
-                for node_id, node_info in interface.nodes.items():
-                    if node_info['user']['shortName'].lower() == from_node_short_name.lower():
-                        sender_node_info = node_info
-                        break
+            from_node_short_name, actual_message = match.groups()
 
-                if sender_node_info:
-                    sender_num = sender_node_info['num']
-                    processed_message = actual_message
-                    # Optional: give feedback to the user
-                    print(f"\033[95mSending as {sender_node_info['user']['longName']} ({sender_node_info['user']['shortName']})\033[0m")
-                    process_message(sender_num, processed_message, interface)
-                else:
-                    # Unrecognized short name, print error and do nothing.
-                    print(f"\033[91mError: Unrecognized short name '{from_node_short_name}'.\033[0m")
-            else:
-                # No prefix match, process as default user
-                sender_num = interface.myInfo.my_node_num
-                processed_message = message
-                process_message(sender_num, processed_message, interface)
+            # Find the node by shortName
+            sender_node_info = None
+            for node_id, node_info in interface.nodes.items():
+                if node_info['user']['shortName'].lower() == from_node_short_name.lower():
+                    sender_node_info = node_info
+                    break
+
+            if not sender_node_info:
+                # Unrecognized short name, print error and do nothing.
+                print(f"\033[91mError: Unrecognized short name '{from_node_short_name}'.\033[0m")
+                continue
+
+            # If we reach here, the sender is valid.
+            sender_num = sender_node_info['num']
+            processed_message = actual_message
+            process_message(sender_num, processed_message, interface)
+
+            # Update the sticky sender name for the next prompt
+            last_sender_short_name = from_node_short_name
+
         except (KeyboardInterrupt, EOFError):
             print("\nExiting simulator.")
             break

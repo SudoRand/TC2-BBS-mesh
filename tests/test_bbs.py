@@ -518,6 +518,29 @@ class TestBBS(unittest.TestCase):
         # Check that the message was not processed
         mock_process_message.assert_not_called()
 
+    @patch('builtins.print')
+    @patch('message_processing.process_message')
+    @patch('builtins.input', side_effect=['help', EOFError])
+    @patch('argparse.ArgumentParser.parse_known_args')
+    def test_simulator_invalid_format(self, mock_parse_args, mock_input, mock_process_message, mock_print):
+        # Set up mock arguments
+        mock_args = MagicMock()
+        mock_args.node_id = '!f1d5a925'
+        mock_args.short_name = 'SIM'
+        mock_args.long_name = 'Simulator'
+        mock_args.no_log = True
+        mock_parse_args.return_value = (mock_args, [])
+
+        import bbs_simulator
+        importlib.reload(bbs_simulator)
+
+        bbs_simulator.main()
+
+        # Check that an error message was printed for the invalid format
+        mock_print.assert_any_call("\033[91mError: Invalid input format. Must be 'SENDER: message'.\033[0m")
+        # Check that the message was not processed
+        mock_process_message.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()
