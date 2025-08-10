@@ -1,5 +1,6 @@
 import logging
 import argparse
+import re
 class SimulatorInterface:
     def __init__(self, node_id='!f1d5a925', short_name='SIM', long_name='Simulator'):
         self.myInfo = type('MyInfo', (), {'my_node_num': int(node_id.replace('!', '0x'), 16)})()
@@ -63,25 +64,23 @@ def main():
             sender_num = interface.myInfo.my_node_num
             processed_message = message
 
-            parts = message.split(':', 1)
-            if len(parts) == 2:
-                from_node_short_name = parts[0]
-                # Check if the message starts with a word of 4 characters or less, followed by a colon and a space
-                if len(from_node_short_name) <= 4 and not from_node_short_name.isspace() and parts[1].startswith(' '):
-                    actual_message = parts[1].lstrip()
+            # Use regex to match "short_name: message" format
+            match = re.match(r'^(\S{1,4}):\s(.*)', message)
+            if match:
+                from_node_short_name, actual_message = match.groups()
 
-                    # Find the node by shortName
-                    sender_node_info = None
-                    for node_id, node_info in interface.nodes.items():
-                        if node_info['user']['shortName'].lower() == from_node_short_name.lower():
-                            sender_node_info = node_info
-                            break
+                # Find the node by shortName
+                sender_node_info = None
+                for node_id, node_info in interface.nodes.items():
+                    if node_info['user']['shortName'].lower() == from_node_short_name.lower():
+                        sender_node_info = node_info
+                        break
 
-                    if sender_node_info:
-                        sender_num = sender_node_info['num']
-                        processed_message = actual_message
-                        # Optional: give feedback to the user
-                        print(f"\033[95mSending as {sender_node_info['user']['longName']} ({sender_node_info['user']['shortName']})\033[0m")
+                if sender_node_info:
+                    sender_num = sender_node_info['num']
+                    processed_message = actual_message
+                    # Optional: give feedback to the user
+                    print(f"\033[95mSending as {sender_node_info['user']['longName']} ({sender_node_info['user']['shortName']})\033[0m")
 
 
             process_message(sender_num, processed_message, interface)
