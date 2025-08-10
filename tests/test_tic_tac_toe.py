@@ -200,7 +200,7 @@ class TestTicTacToe(unittest.TestCase):
 
         # The last message is to P2 (the sender)
         move_confirm_p2 = mock_send_message.call_args_list[-1][0][0]
-        self.assertIn("Move made. Waiting for opponent.", move_confirm_p2)
+        self.assertIn(f"Move made. Waiting for opponent {p1_sn} (X).", move_confirm_p2)
 
 
     @patch('command_handlers.send_message')

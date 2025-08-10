@@ -351,7 +351,13 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
                 response_other = f"{render_board(board, player_x_sn, player_o_sn)}\n\nYour opponent has made a move. It's your turn."
                 send_message(response_other, int(next_player), interface)
 
-            response_self = f"{render_board(board, player_x_sn, player_o_sn)}\n\nMove made. Waiting for opponent."
+            waiting_message = "Move made. Waiting for opponent."
+            if next_player:
+                opponent_sn = player_x_sn if str(next_player) == str(player_x) else player_o_sn
+                opponent_symbol = 'X' if str(next_player) == str(player_x) else 'O'
+                waiting_message = f"Move made. Waiting for opponent {opponent_sn} ({opponent_symbol})."
+
+            response_self = f"{render_board(board, player_x_sn, player_o_sn)}\n\n{waiting_message}"
             send_message(response_self, sender_id, interface)
 
         except ValueError:
