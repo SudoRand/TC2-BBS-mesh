@@ -11,7 +11,7 @@ from db_operations import (
     update_tic_tac_toe_board,
     end_tic_tac_toe_game
 )
-from utils import update_user_state, send_message
+from utils import update_user_state, send_message, get_node_short_name, get_node_id_from_num
 
 menu_name = "Tic Tac Toe"
 
@@ -172,7 +172,9 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
                 return
             response = "Open games:\n"
             for game in games:
-                response += f"ID: {game[0]}, Started by: {game[1]}\n"
+                node_id = get_node_id_from_num(int(game[1]), interface)
+                short_name = get_node_short_name(node_id, interface)
+                response += f"ID: {game[0]}, Started by: {short_name}\n"
             response += "\nEnter the ID of the game you want to join, or 'X' to exit."
             send_message(response, sender_id, interface)
             update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 11})
