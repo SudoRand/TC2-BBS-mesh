@@ -42,8 +42,8 @@ def build_menu(items, menu_name):
             menu_str += "[U]tilities\n"
         elif item.strip() == 'G':
             menu_str += "[G]ames\n"
-        elif item.strip() == 'R':
-            menu_str += "[R]eturn to Game\n"
+        elif item.strip() == 'RG':
+            menu_str += "[RG]eturn to Game\n"
         elif item.strip() == 'T':
             menu_str += "[T]ic Tac Toe\n"
         elif item.strip() == 'X':
@@ -80,12 +80,12 @@ def handle_help_command(sender_id, interface, menu_name=None):
         current_menu_items = main_menu_items[:]
         if state and 'active_game_id' in state:
             if 'G' in current_menu_items:
-                # Replace 'G' with 'R'
+                # Replace 'G' with 'RG'
                 g_index = current_menu_items.index('G')
-                current_menu_items[g_index] = 'R'
+                current_menu_items[g_index] = 'RG'
             else:
-                # Or just add 'R' if 'G' isn't there for some reason
-                current_menu_items.append('R')
+                # Or just add 'RG' if 'G' isn't there for some reason
+                current_menu_items.append('RG')
 
         mail = get_mail(get_node_id_from_num(sender_id, interface))
         response = build_menu(current_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)})")
