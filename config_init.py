@@ -195,8 +195,4 @@ def get_simulator_interface(system_config: dict[str, Any]) -> Any:
         Any: An instance of SimulatorInterface
     """
     from bbs_simulator import SimulatorInterface
-    return SimulatorInterface(
-        node_id=system_config.get('node_id', '!f1d5a925'),
-        short_name=system_config.get('short_name', 'SIM'),
-        long_name=system_config.get('long_name', 'Simulator')
-    )
+    return SimulatorInterface()
