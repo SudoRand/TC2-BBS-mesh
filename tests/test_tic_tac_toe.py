@@ -179,17 +179,28 @@ class TestTicTacToe(unittest.TestCase):
         state_p2 = {'command': 'TIC_TAC_TOE', 'step': 11}
         handle_tic_tac_toe_steps(p2_num, str(game_id), 11, state_p2, mock_interface)
 
-        # Assert P2 gets notified and prompted
-        self.assertEqual(mock_send_message.call_count, 4) # 2 more messages
-        join_msg_p2 = mock_send_message.call_args_list[-2][0][0]
+        # Assert P2 gets notified and prompted, and P1 is NOT notified yet
+        self.assertEqual(mock_send_message.call_count, 3) # Only one message for join
+        join_msg_p2 = mock_send_message.call_args[0][0]
         self.assertIn(f"You joined game {game_id}", join_msg_p2)
         self.assertIn(INSTRUCTION_BOARD, join_msg_p2)
         self.assertIn("It's your turn (O).", join_msg_p2)
 
-        # Assert P1 gets notified
-        join_msg_p1 = mock_send_message.call_args_list[-1][0][0]
-        self.assertIn(f"Player {p2_sn} has joined your game!", join_msg_p1)
-        self.assertIn("It is their turn (O).", join_msg_p1)
+        # 5. Player 2 makes their first move
+        state_p2 = {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id}
+        handle_tic_tac_toe_steps(p2_num, "1", 12, state_p2, mock_interface)
+
+        # Assert P2 gets confirmation AND P1 gets the delayed notification
+        self.assertEqual(mock_send_message.call_count, 5) # 2 more messages sent
+
+        # The second to last message is to P1
+        delayed_notify_p1 = mock_send_message.call_args_list[-2][0][0]
+        self.assertIn(f"Player {p2_sn} has joined your game!", delayed_notify_p1)
+        self.assertIn("It is your turn (X).", delayed_notify_p1)
+
+        # The last message is to P2 (the sender)
+        move_confirm_p2 = mock_send_message.call_args_list[-1][0][0]
+        self.assertIn("Move made. Waiting for opponent.", move_confirm_p2)
 
 
 if __name__ == '__main__':

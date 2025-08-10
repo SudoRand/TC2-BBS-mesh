@@ -217,10 +217,6 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             response_o = f"You joined game {game_id}.\n\n{INSTRUCTION_BOARD}\n\n{board_str}\nIt's your turn (O). Enter 1-9 to make your move."
             send_message(response_o, sender_id, interface)
 
-            # Notify Player X (creator)
-            response_x = f"Player {player_o_short_name} has joined your game!\n{board_str}\nIt is their turn (O)."
-            send_message(response_x, int(player_x_id), interface)
-
         except ValueError:
             send_message("Invalid game ID. Please enter a number.", sender_id, interface)
         except Exception as e:
@@ -306,7 +302,12 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
 
             update_tic_tac_toe_board(game_id, json.dumps(board), next_player)
 
-            if next_player:
+            # Notify Player X on Player O's first move
+            if player_symbol == 'O' and board.count('O') == 1:
+                player_o_sn = get_node_short_name(get_node_id_from_num(int(player_o), interface), interface)
+                response_x = f"Player {player_o_sn} has joined your game!\n{render_board(board, player_x_sn, player_o_sn)}\nIt is your turn (X)."
+                send_message(response_x, int(player_x), interface)
+            elif next_player:
                 response_other = f"{render_board(board, player_x_sn, player_o_sn)}\n\nYour opponent has made a move. It's your turn."
                 send_message(response_other, int(next_player), interface)
 
