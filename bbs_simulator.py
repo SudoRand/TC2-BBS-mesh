@@ -1,7 +1,6 @@
 import logging
 import argparse
 import re
-import readline
 class SimulatorInterface:
     def __init__(self, node_id='!f1d5a925', short_name='SIM', long_name='Simulator'):
         self.myInfo = type('MyInfo', (), {'my_node_num': int(node_id.replace('!', '0x'), 16)})()
@@ -61,15 +60,17 @@ def main():
 
     while True:
         try:
-            pre_filled_prompt = f"{last_sender_short_name}: "
+            # Find the node info for the last sender to create the prompt
+            last_sender_node_info = None
+            for node_id, node_info in interface.nodes.items():
+                if node_info['user']['shortName'].lower() == last_sender_short_name.lower():
+                    last_sender_node_info = node_info
+                    break
 
-            def startup_hook():
-                readline.insert_text(pre_filled_prompt)
-                readline.redisplay()
-
-            readline.set_startup_hook(startup_hook)
-            message = input('> ')
-            readline.set_startup_hook() # Clear hook
+            long_name = last_sender_node_info['user']['longName']
+            short_name = last_sender_node_info['user']['shortName']
+            prompt_str = f"{long_name} ({short_name}): "
+            message = input(prompt_str)
 
             # Use regex to match "short_name: message" format
             match = re.match(r'^(\S{1,4}):\s(.*)', message)

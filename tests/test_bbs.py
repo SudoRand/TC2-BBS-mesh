@@ -474,72 +474,74 @@ class TestBBS(unittest.TestCase):
                     break
         self.assertTrue(found_win_message, "Win message not found for user2")
 
-    @patch('message_processing.process_message')
-    @patch('builtins.input', side_effect=['SIM2: help', EOFError])
-    @patch('argparse.ArgumentParser.parse_known_args')
-    def test_simulator_send_from_another_node(self, mock_parse_args, mock_input, mock_process_message):
-        # Set up mock arguments
+    def test_simulator_send_from_another_node(self):
         mock_args = MagicMock()
         mock_args.node_id = '!f1d5a925'
         mock_args.short_name = 'SIM'
         mock_args.long_name = 'Simulator'
         mock_args.no_log = True
-        mock_parse_args.return_value = (mock_args, [])
 
-        import bbs_simulator
-        importlib.reload(bbs_simulator) # Reload to make sure patches are applied
+        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
+            with patch('builtins.input', side_effect=['SIM2: help', EOFError]):
+                import bbs_simulator
+                importlib.reload(bbs_simulator)
+                with patch('message_processing.process_message') as mock_process_message:
+                    bbs_simulator.main()
+                    expected_sender_num = 0xf1d5a926
+                    mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
 
-        bbs_simulator.main()
-
-        # NODE2's num is 0xf1d5a926
-        expected_sender_num = 0xf1d5a926
-        mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
-
-    @patch('builtins.print')
-    @patch('message_processing.process_message')
-    @patch('builtins.input', side_effect=['UNKN: help', EOFError])
-    @patch('argparse.ArgumentParser.parse_known_args')
-    def test_simulator_send_from_unknown_node(self, mock_parse_args, mock_input, mock_process_message, mock_print):
-        # Set up mock arguments
+    def test_simulator_send_from_unknown_node(self):
         mock_args = MagicMock()
         mock_args.node_id = '!f1d5a925'
         mock_args.short_name = 'SIM'
         mock_args.long_name = 'Simulator'
         mock_args.no_log = True
-        mock_parse_args.return_value = (mock_args, [])
 
-        import bbs_simulator
-        importlib.reload(bbs_simulator)
+        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
+            with patch('builtins.input', side_effect=['UNKN: help', EOFError]):
+                import bbs_simulator
+                importlib.reload(bbs_simulator)
+                with patch('message_processing.process_message') as mock_process_message:
+                    with patch('builtins.print') as mock_print:
+                        bbs_simulator.main()
+                        mock_print.assert_any_call("\033[91mError: Unrecognized short name 'UNKN'.\033[0m")
+                        mock_process_message.assert_not_called()
 
-        bbs_simulator.main()
-
-        # Check that an error message was printed for the unrecognized short name
-        mock_print.assert_any_call("\033[91mError: Unrecognized short name 'UNKN'.\033[0m")
-        # Check that the message was not processed
-        mock_process_message.assert_not_called()
-
-    @patch('builtins.print')
-    @patch('message_processing.process_message')
-    @patch('builtins.input', side_effect=['help', EOFError])
-    @patch('argparse.ArgumentParser.parse_known_args')
-    def test_simulator_invalid_format(self, mock_parse_args, mock_input, mock_process_message, mock_print):
-        # Set up mock arguments
+    def test_simulator_invalid_format(self):
         mock_args = MagicMock()
         mock_args.node_id = '!f1d5a925'
         mock_args.short_name = 'SIM'
         mock_args.long_name = 'Simulator'
         mock_args.no_log = True
-        mock_parse_args.return_value = (mock_args, [])
 
-        import bbs_simulator
-        importlib.reload(bbs_simulator)
+        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
+            with patch('builtins.input', side_effect=['help', EOFError]):
+                import bbs_simulator
+                importlib.reload(bbs_simulator)
+                with patch('message_processing.process_message') as mock_process_message:
+                    with patch('builtins.print') as mock_print:
+                        bbs_simulator.main()
+                        mock_print.assert_any_call("\033[91mError: Invalid input format. Must be 'SENDER: message'.\033[0m")
+                        mock_process_message.assert_not_called()
 
-        bbs_simulator.main()
+    def test_simulator_sticky_prompt(self):
+        mock_args = MagicMock()
+        mock_args.node_id = '!f1d5a925'
+        mock_args.short_name = 'SIM'
+        mock_args.long_name = 'Simulator'
+        mock_args.no_log = True
 
-        # Check that an error message was printed for the invalid format
-        mock_print.assert_any_call("\033[91mError: Invalid input format. Must be 'SENDER: message'.\033[0m")
-        # Check that the message was not processed
-        mock_process_message.assert_not_called()
+        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
+            with patch('builtins.input', side_effect=['SIM2: help', 'SIM: help', EOFError]) as mock_input:
+                import bbs_simulator
+                importlib.reload(bbs_simulator)
+                with patch('message_processing.process_message'):
+                    bbs_simulator.main()
+
+                    # Check that the prompt changes after a command from a different sender
+                    self.assertEqual(mock_input.call_args_list[0].args[0], 'Simulator (SIM): ')
+                    self.assertEqual(mock_input.call_args_list[1].args[0], 'Second Node (SIM2): ')
+                    self.assertEqual(mock_input.call_args_list[2].args[0], 'Simulator (SIM): ')
 
 
 if __name__ == '__main__':
