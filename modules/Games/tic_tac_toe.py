@@ -6,6 +6,7 @@ import json
 from db_operations import (
     create_tic_tac_toe_game,
     get_open_tic_tac_toe_games,
+    get_active_tic_tac_toe_games_for_player,
     join_tic_tac_toe_game,
     get_tic_tac_toe_game_by_id,
     update_tic_tac_toe_board,
@@ -103,8 +104,15 @@ def redisplay_game_board(sender_id, game_id, interface):
         send_message(response, sender_id, interface)
 
 def handle_tic_tac_toe_command(sender_id, interface):
-    response = "Welcome to Tic Tac Toe!\nWhat would you like to do?\n[1] Player vs Player (Local)\n[2] Player vs Computer\n[3] Player vs Player (Remote)\nE[X]IT"
-    send_message(response, sender_id, interface)
+    active_games = get_active_tic_tac_toe_games_for_player(str(sender_id))
+    menu = "Welcome to Tic Tac Toe!\nWhat would you like to do?\n" \
+           "[1] Player vs Player (Local)\n" \
+           "[2] Player vs Computer\n" \
+           "[3] Player vs Player (Remote)\n"
+    if active_games:
+        menu += "[4] Continue Game\n"
+    menu += "E[X]IT"
+    send_message(menu, sender_id, interface)
     update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 1})
 
 def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
@@ -137,8 +145,29 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 10})
             response = "Player vs Player (Remote) mode selected.\n[1] Start a new game\n[2] Join an existing game\nE[X]IT"
             send_message(response, sender_id, interface)
+        elif message == "4":
+            active_games = get_active_tic_tac_toe_games_for_player(str(sender_id))
+            if not active_games:
+                send_message("You have no active games to continue.", sender_id, interface)
+                handle_tic_tac_toe_command(sender_id, interface)
+                return
+
+            response = "Your active games:\n"
+            for game in active_games:
+                game_id, player_x, player_o, status = game
+                opponent_id = player_o if str(sender_id) == player_x else player_x
+                opponent_sn = "Waiting..."
+                if opponent_id:
+                    opponent_node_id = get_node_id_from_num(int(opponent_id), interface)
+                    opponent_sn = get_node_short_name(opponent_node_id, interface)
+
+                response += f"ID: {game_id}, Opponent: {opponent_sn}, Status: {status}\n"
+
+            response += "\nEnter the ID of the game you want to continue, or 'X' to exit."
+            send_message(response, sender_id, interface)
+            update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 13})
         else:
-            send_message("Invalid choice. Enter '1', '2', or '3', or 'X' to exit.", sender_id, interface)
+            send_message("Invalid choice. Enter '1', '2', '3', or 'X' to exit.", sender_id, interface)
 
     elif step == 2:
         game = state['game']
@@ -374,3 +403,18 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             else:
                 response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's not your turn. Or [M]enu to exit."
                 send_message(response, sender_id, interface)
+
+    elif step == 13: # Selecting a game to continue
+        try:
+            game_id = int(message)
+            # Basic validation to ensure the user is part of the game they're trying to continue
+            active_games = get_active_tic_tac_toe_games_for_player(str(sender_id))
+            if game_id not in [g[0] for g in active_games]:
+                send_message("Invalid game ID. Please choose from the list.", sender_id, interface)
+                return
+
+            update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
+            redisplay_game_board(sender_id, game_id, interface)
+
+        except ValueError:
+            send_message("Invalid game ID. Please enter a number.", sender_id, interface)

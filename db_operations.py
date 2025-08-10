@@ -195,6 +195,16 @@ def get_open_tic_tac_toe_games():
     c.execute("SELECT id, player_x, unique_id FROM tic_tac_toe_games WHERE status = 'waiting'")
     return c.fetchall()
 
+def get_active_tic_tac_toe_games_for_player(player_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, player_x, player_o, status
+        FROM tic_tac_toe_games
+        WHERE (player_x = ? OR player_o = ?) AND status IN ('waiting', 'in_progress')
+    """, (player_id, player_id))
+    return c.fetchall()
+
 def join_tic_tac_toe_game(game_id, player_o):
     conn = get_db_connection()
     c = conn.cursor()

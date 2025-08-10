@@ -14,12 +14,13 @@ from db_operations import (
     initialize_database,
     create_tic_tac_toe_game,
     get_open_tic_tac_toe_games,
+    get_active_tic_tac_toe_games_for_player,
     join_tic_tac_toe_game,
     get_tic_tac_toe_game_by_id,
     update_tic_tac_toe_board,
     end_tic_tac_toe_game
 )
-from modules.Games.tic_tac_toe import check_winner, handle_tic_tac_toe_steps, INSTRUCTION_BOARD
+from modules.Games.tic_tac_toe import check_winner, handle_tic_tac_toe_steps, handle_tic_tac_toe_command, INSTRUCTION_BOARD
 from utils import update_user_state, get_user_state
 
 class TestTicTacToe(unittest.TestCase):
@@ -108,6 +109,76 @@ class TestTicTacToe(unittest.TestCase):
         game = get_tic_tac_toe_game_by_id(game_db_id)
         self.assertEqual(game[5], "draw")
         self.assertEqual(game[6], "finished")
+
+    def test_get_active_games_for_player(self):
+        game1_id = create_tic_tac_toe_game("player1")
+        game2_id = create_tic_tac_toe_game("player3")
+
+        join_tic_tac_toe_game(game1_id, "player2")
+
+        # Player 1 should have one active game
+        player1_games = get_active_tic_tac_toe_games_for_player("player1")
+        self.assertEqual(len(player1_games), 1)
+        self.assertEqual(player1_games[0][0], game1_id)
+
+        # Player 2 should have one active game
+        player2_games = get_active_tic_tac_toe_games_for_player("player2")
+        self.assertEqual(len(player2_games), 1)
+        self.assertEqual(player2_games[0][0], game1_id)
+
+        # Player 3 should have one active game (waiting for opponent)
+        player3_games = get_active_tic_tac_toe_games_for_player("player3")
+        self.assertEqual(len(player3_games), 1)
+        self.assertEqual(player3_games[0][0], game2_id)
+
+        # Player 4 should have no active games
+        player4_games = get_active_tic_tac_toe_games_for_player("player4")
+        self.assertEqual(len(player4_games), 0)
+
+        # End game 1
+        end_tic_tac_toe_game(game1_id, "player1")
+        player1_games_after_end = get_active_tic_tac_toe_games_for_player("player1")
+        self.assertEqual(len(player1_games_after_end), 0)
+
+    @patch('modules.Games.tic_tac_toe.send_message')
+    def test_continue_game_flow(self, mock_send_message):
+        # 1. Setup mock interface and players
+        mock_interface = unittest.mock.MagicMock()
+        p1_num = 111
+        p1_id = '!p1'
+        p1_sn = 'P1'
+        p2_num = 222
+        p2_id = '!p2'
+        p2_sn = 'P2'
+
+        mock_interface.nodes = {
+            p1_id: {'num': p1_num, 'user': {'shortName': p1_sn}},
+            p2_id: {'num': p2_num, 'user': {'shortName': p2_sn}},
+        }
+
+        # 2. Player 1 creates a game
+        game_id = create_tic_tac_toe_game(str(p1_num))
+        join_tic_tac_toe_game(game_id, str(p2_num))
+
+        # 3. Player 1 goes to the tic-tac-toe menu
+        handle_tic_tac_toe_command(p1_num, mock_interface)
+        self.assertEqual(mock_send_message.call_count, 1)
+        menu_msg = mock_send_message.call_args[0][0]
+        self.assertIn("[4] Continue Game", menu_msg)
+
+        # 4. Player 1 chooses to continue a game
+        state_p1 = get_user_state(p1_num)
+        handle_tic_tac_toe_steps(p1_num, "4", state_p1['step'], state_p1, mock_interface)
+        self.assertEqual(mock_send_message.call_count, 2)
+        continue_menu_msg = mock_send_message.call_args[0][0]
+        self.assertIn(f"ID: {game_id}, Opponent: {p2_sn}, Status: in_progress", continue_menu_msg)
+
+        # 5. Player 1 chooses the game to continue
+        state_p1 = get_user_state(p1_num)
+        handle_tic_tac_toe_steps(p1_num, str(game_id), state_p1['step'], state_p1, mock_interface)
+        self.assertEqual(mock_send_message.call_count, 3)
+        redisplay_msg = mock_send_message.call_args[0][0]
+        self.assertIn("It's not your turn.", redisplay_msg) # P2 is current player
 
     @patch('modules.Games.tic_tac_toe.send_message')
     def test_list_open_games_displays_short_name(self, mock_send_message):
