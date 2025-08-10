@@ -475,30 +475,18 @@ class TestBBS(unittest.TestCase):
         self.assertTrue(found_win_message, "Win message not found for user2")
 
     def test_simulator_send_from_another_node(self):
-        mock_args = MagicMock()
-        mock_args.node_id = '!f1d5a925'
-        mock_args.short_name = 'SIM'
-        mock_args.long_name = 'Simulator'
-        mock_args.no_log = True
-
-        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
-            with patch('builtins.input', side_effect=['SIM2: help', EOFError]):
-                import bbs_simulator
-                importlib.reload(bbs_simulator)
-                with patch('message_processing.process_message') as mock_process_message:
+        with patch('builtins.input', side_effect=['SIM2: help', EOFError]):
+            import bbs_simulator
+            importlib.reload(bbs_simulator)
+            with patch('message_processing.process_message') as mock_process_message:
+                with patch('argparse.ArgumentParser.parse_known_args', return_value=(MagicMock(no_log=True), [])):
                     bbs_simulator.main()
-                    expected_sender_num = 0xf1d5a926
-                    mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
+                expected_sender_num = 0xf1d5a926
+                mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
 
     def test_simulator_send_from_unknown_node(self):
-        mock_args = MagicMock()
-        mock_args.node_id = '!f1d5a925'
-        mock_args.short_name = 'SIM'
-        mock_args.long_name = 'Simulator'
-        mock_args.no_log = True
-
-        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
-            with patch('builtins.input', side_effect=['UNKN: help', EOFError]):
+        with patch('builtins.input', side_effect=['UNKN: help', EOFError]):
+            with patch('argparse.ArgumentParser.parse_known_args', return_value=(MagicMock(no_log=True), [])):
                 import bbs_simulator
                 importlib.reload(bbs_simulator)
                 with patch('message_processing.process_message') as mock_process_message:
@@ -508,14 +496,8 @@ class TestBBS(unittest.TestCase):
                         mock_process_message.assert_not_called()
 
     def test_simulator_unprefixed_message(self):
-        mock_args = MagicMock()
-        mock_args.node_id = '!f1d5a925'
-        mock_args.short_name = 'SIM'
-        mock_args.long_name = 'Simulator'
-        mock_args.no_log = True
-
-        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
-            with patch('builtins.input', side_effect=['help', EOFError]):
+        with patch('builtins.input', side_effect=['help', EOFError]):
+            with patch('argparse.ArgumentParser.parse_known_args', return_value=(MagicMock(no_log=True), [])):
                 import bbs_simulator
                 importlib.reload(bbs_simulator)
                 with patch('message_processing.process_message') as mock_process_message:
@@ -525,21 +507,15 @@ class TestBBS(unittest.TestCase):
                     mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
 
     def test_simulator_sticky_prompt(self):
-        mock_args = MagicMock()
-        mock_args.node_id = '!f1d5a925'
-        mock_args.short_name = 'SIM'
-        mock_args.long_name = 'Simulator'
-        mock_args.no_log = True
-
-        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
-            with patch('builtins.input', side_effect=['SIM2: help', 'help', EOFError]) as mock_input:
+        with patch('builtins.input', side_effect=['SIM2: help', 'help', EOFError]) as mock_input:
+            with patch('argparse.ArgumentParser.parse_known_args', return_value=(MagicMock(no_log=True), [])):
                 import bbs_simulator
                 importlib.reload(bbs_simulator)
                 with patch('message_processing.process_message') as mock_process_message:
                     bbs_simulator.main()
 
                     # Check prompts
-                    self.assertEqual(mock_input.call_args_list[0].args[0], 'Simulator (SIM): ')
+                    self.assertEqual(mock_input.call_args_list[0].args[0], 'Simulator Node (SIM): ')
                     self.assertEqual(mock_input.call_args_list[1].args[0], 'Second Node (SIM2): ')
 
                     # Check that the second message was processed by the new sticky sender
@@ -549,14 +525,8 @@ class TestBBS(unittest.TestCase):
                     self.assertEqual(last_call.args[1], 'help')
 
     def test_simulator_startup_instructions(self):
-        mock_args = MagicMock()
-        mock_args.node_id = '!f1d5a925'
-        mock_args.short_name = 'SIM'
-        mock_args.long_name = 'Simulator'
-        mock_args.no_log = True
-
-        with patch('argparse.ArgumentParser.parse_known_args', return_value=(mock_args, [])):
-            with patch('builtins.input', side_effect=EOFError):
+        with patch('builtins.input', side_effect=EOFError):
+            with patch('argparse.ArgumentParser.parse_known_args', return_value=(MagicMock(no_log=True), [])):
                 import bbs_simulator
                 importlib.reload(bbs_simulator)
                 with patch('builtins.print') as mock_print:
@@ -564,7 +534,7 @@ class TestBBS(unittest.TestCase):
                     # Check that the startup instructions are printed
                     mock_print.assert_any_call("To send as a different node, prefix your message with 'NAME: ', e.g., 'SIM2: help'.")
                     mock_print.assert_any_call("Available nodes:")
-                    mock_print.assert_any_call("- SIM (Simulator)")
+                    mock_print.assert_any_call("- SIM (Simulator Node)")
                     mock_print.assert_any_call("- SIM2 (Second Node)")
 
 

@@ -2,15 +2,15 @@ import logging
 import argparse
 import re
 class SimulatorInterface:
-    def __init__(self, node_id='!f1d5a925', short_name='SIM', long_name='Simulator'):
+    def __init__(self):
+        node_id='!f1d5a925'
         self.myInfo = type('MyInfo', (), {'my_node_num': int(node_id.replace('!', '0x'), 16)})()
         self.nodes = {
-            node_id: {
+            '!f1d5a925': {
                 'num': self.myInfo.my_node_num,
-                'user': {'shortName': short_name, 'longName': long_name},
+                'user': {'shortName': 'SIM', 'longName': 'Simulator Node'},
                 'deviceMetrics': {'batteryLevel': 100},
             },
-            # Add more nodes for the simulator
             '!f1d5a926': {
                 'num': 0xf1d5a926,
                 'user': {'shortName': 'SIM2', 'longName': 'Second Node'},
@@ -34,15 +34,8 @@ class SimulatorInterface:
 
 def main():
     parser = argparse.ArgumentParser(description="BBS Simulator")
-    parser.add_argument("--node-id", default='!f1d5a925', help="Node ID of the simulator")
-    parser.add_argument("--short-name", default='SIM', help="Short name of the simulator node")
-    parser.add_argument("--long-name", default='Simulator', help="Long name of the simulator node")
     parser.add_argument("--no-log", action="store_true", help="Suppress logging output")
-
-    # This is a bit of a hack to allow the simulator to be launched from server.py
-    # without parsing the server's command-line arguments.
     args, _ = parser.parse_known_args()
-
 
     if not args.no_log:
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,7 +45,7 @@ def main():
 
     initialize_database()
 
-    interface = SimulatorInterface(node_id=args.node_id, short_name=args.short_name, long_name=args.long_name)
+    interface = SimulatorInterface()
 
     print("BBS Simulator Started. Type 'help' for a list of commands.")
     print("To send as a different node, prefix your message with 'NAME: ', e.g., 'SIM2: help'.")
@@ -60,8 +53,7 @@ def main():
     for node in interface.nodes.values():
         print(f"- {node['user']['shortName']} ({node['user']['longName']})")
 
-
-    last_sender_short_name = args.short_name
+    last_sender_short_name = 'SIM'
 
     while True:
         try:
