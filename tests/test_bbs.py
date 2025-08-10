@@ -495,10 +495,11 @@ class TestBBS(unittest.TestCase):
         expected_sender_num = 0xf1d5a926
         mock_process_message.assert_called_once_with(expected_sender_num, 'help', unittest.mock.ANY)
 
+    @patch('builtins.print')
     @patch('message_processing.process_message')
-    @patch('builtins.input', side_effect=['@UNKNOWN: help', EOFError])
+    @patch('builtins.input', side_effect=['UNKN: help', EOFError])
     @patch('argparse.ArgumentParser.parse_known_args')
-    def test_simulator_send_from_unknown_node(self, mock_parse_args, mock_input, mock_process_message):
+    def test_simulator_send_from_unknown_node(self, mock_parse_args, mock_input, mock_process_message, mock_print):
         # Set up mock arguments
         mock_args = MagicMock()
         mock_args.node_id = '!f1d5a925'
@@ -512,10 +513,10 @@ class TestBBS(unittest.TestCase):
 
         bbs_simulator.main()
 
-        # The current implementation processes messages from unknown nodes as if they came from the simulator node itself.
-        # The test is updated to reflect this behavior.
-        expected_sender_num = 0xf1d5a925  # Simulator's default node num
-        mock_process_message.assert_called_once_with(expected_sender_num, '@UNKNOWN: help', unittest.mock.ANY)
+        # Check that an error message was printed for the unrecognized short name
+        mock_print.assert_any_call("\033[91mError: Unrecognized short name 'UNKN'.\033[0m")
+        # Check that the message was not processed
+        mock_process_message.assert_not_called()
 
 
 if __name__ == '__main__':

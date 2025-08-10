@@ -61,9 +61,6 @@ def main():
             prompt = f"\033[93m{interface.nodes[args.node_id]['user']['longName']} ({interface.nodes[args.node_id]['user']['shortName']}): \033[0m"
             message = input(prompt)
 
-            sender_num = interface.myInfo.my_node_num
-            processed_message = message
-
             # Use regex to match "short_name: message" format
             match = re.match(r'^(\S{1,4}):\s(.*)', message)
             if match:
@@ -81,9 +78,15 @@ def main():
                     processed_message = actual_message
                     # Optional: give feedback to the user
                     print(f"\033[95mSending as {sender_node_info['user']['longName']} ({sender_node_info['user']['shortName']})\033[0m")
-
-
-            process_message(sender_num, processed_message, interface)
+                    process_message(sender_num, processed_message, interface)
+                else:
+                    # Unrecognized short name, print error and do nothing.
+                    print(f"\033[91mError: Unrecognized short name '{from_node_short_name}'.\033[0m")
+            else:
+                # No prefix match, process as default user
+                sender_num = interface.myInfo.my_node_num
+                processed_message = message
+                process_message(sender_num, processed_message, interface)
         except (KeyboardInterrupt, EOFError):
             print("\nExiting simulator.")
             break
