@@ -19,7 +19,7 @@ from db_operations import (
     update_tic_tac_toe_board,
     end_tic_tac_toe_game
 )
-from modules.Games.tic_tac_toe import check_winner, handle_tic_tac_toe_steps
+from modules.Games.tic_tac_toe import check_winner, handle_tic_tac_toe_steps, INSTRUCTION_BOARD
 from utils import update_user_state
 
 class TestTicTacToe(unittest.TestCase):
@@ -137,6 +137,59 @@ class TestTicTacToe(unittest.TestCase):
         sent_message = mock_send_message.call_args[0][0]
         self.assertIn(f"Started by: {player1_short_name}", sent_message)
         self.assertNotIn(str(player1_node_num), sent_message)
+
+    @patch('modules.Games.tic_tac_toe.send_message')
+    def test_remote_game_flow(self, mock_send_message):
+        # 1. Setup mock interface and players
+        mock_interface = unittest.mock.MagicMock()
+        p1_num = 111
+        p1_id = '!p1'
+        p1_sn = 'P1'
+        p2_num = 222
+        p2_id = '!p2'
+        p2_sn = 'P2'
+
+        mock_interface.nodes = {
+            p1_id: {'num': p1_num, 'user': {'shortName': p1_sn}},
+            p2_id: {'num': p2_num, 'user': {'shortName': p2_sn}},
+        }
+
+        # 2. Player 1 creates a game
+        state_p1 = {'command': 'TIC_TAC_TOE', 'step': 10}
+        handle_tic_tac_toe_steps(p1_num, "1", 10, state_p1, mock_interface)
+
+        # Assert P1 gets prompted for first move
+        self.assertEqual(mock_send_message.call_count, 1)
+        create_msg = mock_send_message.call_args[0][0]
+        self.assertIn("New game started.", create_msg)
+        self.assertIn(INSTRUCTION_BOARD, create_msg)
+        self.assertIn("You are X. Enter 1-9 to make your move.", create_msg)
+        game_id = get_open_tic_tac_toe_games()[0][0]
+
+        # 3. Player 1 makes first move
+        state_p1 = {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id}
+        handle_tic_tac_toe_steps(p1_num, "5", 12, state_p1, mock_interface)
+
+        # Assert P1 gets confirmation
+        self.assertEqual(mock_send_message.call_count, 2)
+        move1_msg = mock_send_message.call_args[0][0]
+        self.assertIn("Move made. Waiting for opponent.", move1_msg)
+
+        # 4. Player 2 joins the game
+        state_p2 = {'command': 'TIC_TAC_TOE', 'step': 11}
+        handle_tic_tac_toe_steps(p2_num, str(game_id), 11, state_p2, mock_interface)
+
+        # Assert P2 gets notified and prompted
+        self.assertEqual(mock_send_message.call_count, 4) # 2 more messages
+        join_msg_p2 = mock_send_message.call_args_list[-2][0][0]
+        self.assertIn(f"You joined game {game_id}", join_msg_p2)
+        self.assertIn(INSTRUCTION_BOARD, join_msg_p2)
+        self.assertIn("It's your turn (O).", join_msg_p2)
+
+        # Assert P1 gets notified
+        join_msg_p1 = mock_send_message.call_args_list[-1][0][0]
+        self.assertIn(f"Player {p2_sn} has joined your game!", join_msg_p1)
+        self.assertIn("It is their turn (O).", join_msg_p1)
 
 
 if __name__ == '__main__':

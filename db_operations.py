@@ -198,7 +198,7 @@ def get_open_tic_tac_toe_games():
 def join_tic_tac_toe_game(game_id, player_o):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE tic_tac_toe_games SET player_o = ?, status = 'in_progress' WHERE id = ?", (player_o, game_id))
+    c.execute("UPDATE tic_tac_toe_games SET player_o = ?, status = 'in_progress', current_player = ? WHERE id = ?", (player_o, player_o, game_id))
     conn.commit()
 
 def get_tic_tac_toe_game_by_id(game_id):
