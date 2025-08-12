@@ -377,7 +377,10 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
                 response_x = f"Player {player_o_sn} has joined your game!\n{render_board(board, player_x_sn, player_o_sn)}\nIt is your turn (X)."
                 send_message(response_x, int(player_x), interface)
             elif next_player:
-                response_other = f"{render_board(board, player_x_sn, player_o_sn)}\n\nYour opponent has made a move. It's your turn."
+                mover_sn = player_x_sn if str(sender_id) == player_x else player_o_sn
+                mover_symbol = player_symbol
+                your_symbol = 'O' if mover_symbol == 'X' else 'X'
+                response_other = f"{render_board(board, player_x_sn, player_o_sn)}\n\n{mover_sn} ({mover_symbol}) has made a move. It's your turn ({your_symbol})."
                 send_message(response_other, int(next_player), interface)
 
             waiting_message = "Move made. Waiting for opponent."

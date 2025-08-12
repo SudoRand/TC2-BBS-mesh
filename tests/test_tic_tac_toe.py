@@ -273,6 +273,15 @@ class TestTicTacToe(unittest.TestCase):
         move_confirm_p2 = mock_send_message.call_args_list[-1][0][0]
         self.assertIn(f"Move made. Waiting for opponent {p1_sn} (X).", move_confirm_p2)
 
+        # 6. Player 1 makes another move
+        state_p1 = get_user_state(p1_num)
+        handle_tic_tac_toe_steps(p1_num, "9", state_p1['step'], state_p1, mock_interface)
+
+        # Assert P2 gets the new notification
+        self.assertEqual(mock_send_message.call_count, 7) # 2 more messages
+        notify_p2 = mock_send_message.call_args_list[-2][0][0]
+        self.assertIn(f"{p1_sn} (X) has made a move. It's your turn (O).", notify_p2)
+
 
     @patch('command_handlers.send_message')
     @patch('modules.Games.tic_tac_toe.send_message')
