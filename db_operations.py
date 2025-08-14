@@ -48,8 +48,9 @@ def initialize_database():
                     name TEXT NOT NULL,
                     url TEXT NOT NULL
                 );''')
-    c.execute('''CREATE TABLE IF NOT EXISTS tic_tac_toe_games (
+    c.execute('''CREATE TABLE IF NOT EXISTS turn_based_games (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    game_type TEXT NOT NULL,
                     player_x TEXT,
                     player_o TEXT,
                     board TEXT,
@@ -176,55 +177,56 @@ def get_sender_id_by_mail_id(mail_id):
     return None
 
 
-def create_tic_tac_toe_game(player_x, unique_id=None):
+# --- Generic Turn-Based Game Functions ---
+
+def create_game(game_type, player_x, initial_board_json, unique_id=None):
     conn = get_db_connection()
     c = conn.cursor()
     if not unique_id:
         unique_id = str(uuid.uuid4())
-    board = '[" ", " ", " ", " ", " ", " ", " ", " ", " "]'  # JSON string of the board
     c.execute(
-        "INSERT INTO tic_tac_toe_games (player_x, board, current_player, status, unique_id) VALUES (?, ?, ?, ?, ?)",
-        (player_x, board, player_x, "waiting", unique_id)
+        "INSERT INTO turn_based_games (game_type, player_x, board, current_player, status, unique_id) VALUES (?, ?, ?, ?, ?, ?)",
+        (game_type, player_x, initial_board_json, player_x, "waiting", unique_id)
     )
     conn.commit()
     return c.lastrowid
 
-def get_open_tic_tac_toe_games():
+def get_open_games(game_type):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT id, player_x, unique_id FROM tic_tac_toe_games WHERE status = 'waiting'")
+    c.execute("SELECT id, player_x, unique_id FROM turn_based_games WHERE status = 'waiting' AND game_type = ?", (game_type,))
     return c.fetchall()
 
-def get_active_tic_tac_toe_games_for_player(player_id):
+def get_active_games_for_player(game_type, player_id):
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("""
         SELECT id, player_x, player_o, status
-        FROM tic_tac_toe_games
-        WHERE (player_x = ? OR player_o = ?) AND status IN ('waiting', 'in_progress')
-    """, (player_id, player_id))
+        FROM turn_based_games
+        WHERE game_type = ? AND (player_x = ? OR player_o = ?) AND status IN ('waiting', 'in_progress')
+    """, (game_type, player_id, player_id))
     return c.fetchall()
 
-def join_tic_tac_toe_game(game_id, player_o):
+def join_game(game_id, player_o):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE tic_tac_toe_games SET player_o = ?, status = 'in_progress', current_player = ? WHERE id = ?", (player_o, player_o, game_id))
+    c.execute("UPDATE turn_based_games SET player_o = ?, status = 'in_progress', current_player = ? WHERE id = ?", (player_o, player_o, game_id))
     conn.commit()
 
-def get_tic_tac_toe_game_by_id(game_id):
+def get_game_by_id(game_id):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT * FROM tic_tac_toe_games WHERE id = ?", (game_id,))
+    c.execute("SELECT * FROM turn_based_games WHERE id = ?", (game_id,))
     return c.fetchone()
 
-def update_tic_tac_toe_board(game_id, board, current_player):
+def update_game_board(game_id, board, current_player):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE tic_tac_toe_games SET board = ?, current_player = ? WHERE id = ?", (board, current_player, game_id))
+    c.execute("UPDATE turn_based_games SET board = ?, current_player = ? WHERE id = ?", (board, current_player, game_id))
     conn.commit()
 
-def end_tic_tac_toe_game(game_id, winner):
+def end_game(game_id, winner):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE tic_tac_toe_games SET winner = ?, status = 'finished' WHERE id = ?", (winner, game_id))
+    c.execute("UPDATE turn_based_games SET winner = ?, status = 'finished' WHERE id = ?", (winner, game_id))
     conn.commit()

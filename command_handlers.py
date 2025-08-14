@@ -16,7 +16,9 @@ from utils import (
     get_node_short_name, send_message,
     update_user_state, get_user_state
 )
-from modules.Games.tic_tac_toe import handle_tic_tac_toe_command, redisplay_game_board
+from modules.Games.tic_tac_toe import handle_tic_tac_toe_command
+from modules.Games.game_logic_driver import GameLogicDriver
+from modules.Games.tic_tac_toe import TicTacToeGame
 
 # Read the configuration for menu options
 config = configparser.ConfigParser()
@@ -102,9 +104,13 @@ def handle_return_to_game_command(sender_id, interface):
     state = get_user_state(sender_id)
     if state and 'active_game_id' in state:
         game_id = state['active_game_id']
-        # Update state to put user back in the game
+        # TODO: This assumes the only pausable game is Tic-Tac-Toe.
+        # This should be refactored to handle multiple game types.
+        game_instance = TicTacToeGame()
+        driver = GameLogicDriver(game_instance, interface)
+
         update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
-        redisplay_game_board(sender_id, game_id, interface)
+        driver.redisplay_game_board(sender_id, game_id)
     else:
         # Should not happen if the menu is built correctly, but handle it just in case
         send_message("You don't have an active game to return to.", sender_id, interface)

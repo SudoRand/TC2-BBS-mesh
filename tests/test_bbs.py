@@ -424,12 +424,13 @@ class TestBBS(unittest.TestCase):
         call_args, _ = last_call
         self.assertIn("Congratulations! X wins!", call_args[0])
 
+    @patch('modules.Games.game_logic_driver.send_message')
     @patch('modules.Games.tic_tac_toe.send_message')
-    def test_tic_tac_toe_remote_game(self, mock_send_message):
+    def test_tic_tac_toe_remote_game(self, mock_ttt_send, mock_driver_send):
         user1_id = 1
         user2_id = 2
 
-        def get_node_id_side_effect(num):
+        def get_node_id_side_effect(num, interface):
             if num == user1_id:
                 return '!a_mock_node_id'
             elif num == user2_id:
@@ -463,9 +464,9 @@ class TestBBS(unittest.TestCase):
         self.message_processing.process_message(user2_id, '8', self.interface) # O wins with 2,5,8
 
         # Check that the win message is displayed for user2
-        # We need to check all calls to mock_send_message to find the one we want
+        all_calls = mock_ttt_send.call_args_list + mock_driver_send.call_args_list
         found_win_message = False
-        for call in mock_send_message.call_args_list:
+        for call in all_calls:
             # The winner is sent the "You win!" message
             if "Congratulations! You win!" in call[0][0]:
                 # Ensure it was sent to user2
