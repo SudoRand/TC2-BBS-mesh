@@ -191,5 +191,23 @@ class TestGameLogicDriver(unittest.TestCase):
         self.assertEqual(db_game[7], 'finished') # status
         self.assertEqual(db_game[6], str(self.p1_num)) # winner
 
+    def test_play_move_fails_before_p2_joins(self):
+        # P1 starts a game, but P2 never joins
+        game_id = create_game('mock_game', str(self.p1_num), json.dumps([" "]*4))
+        initial_game_state = get_game_by_id(game_id)
+
+        # P1 tries to make a move
+        state_p1 = {'game_id': game_id}
+        self.driver.play_move(self.p1_num, "0", state_p1)
+
+        # Assert that a message was sent telling P1 to wait
+        self.mock_send_message.assert_called_once()
+        self.assertIn("Waiting for an opponent", self.mock_send_message.call_args[0][0])
+
+        # Assert that the game state did NOT change in the database
+        final_game_state = get_game_by_id(game_id)
+        self.assertEqual(initial_game_state, final_game_state)
+
+
 if __name__ == '__main__':
     unittest.main()

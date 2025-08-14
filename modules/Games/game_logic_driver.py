@@ -95,6 +95,11 @@ class GameLogicDriver:
             return
 
         _, _, player_x, player_o, board_json, current_player, _, status, _ = game_data
+
+        if player_o is None:
+            send_message("Waiting for an opponent to join before you can make a move.", sender_id, self.interface)
+            return
+
         board = json.loads(board_json)
 
         if str(sender_id) != current_player:
