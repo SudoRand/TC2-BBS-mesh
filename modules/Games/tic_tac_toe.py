@@ -102,7 +102,7 @@ def redisplay_game_board(sender_id, game_id, interface):
     else:
         current_player_sn = player_x_sn if str(current_player) == str(player_x) else player_o_sn
         current_player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
-        response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's {current_player_sn} ({current_player_symbol})'s turn. Or E[X]IT to pause."
+        response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's {current_player_sn} ({current_player_symbol})'s turn. E[X]IT to pause."
         send_message(response, sender_id, interface)
 
 def handle_tic_tac_toe_command(sender_id, interface):
@@ -406,7 +406,7 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             else:
                 current_player_sn = player_x_sn if str(current_player) == str(player_x) else player_o_sn
                 current_player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
-                response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's {current_player_sn} ({current_player_symbol})'s turn. Or E[X]IT to pause."
+                response = f"{render_board(board, player_x_sn, player_o_sn)}\n\nIt's {current_player_sn} ({current_player_symbol})'s turn. E[X]IT to pause."
                 send_message(response, sender_id, interface)
 
     elif step == 13: # Selecting a game to continue
