@@ -212,7 +212,7 @@ class GameLogicDriver:
         # Notify the other player that it's their turn
         if str(sender_id) == p_x_id and p_o_id is None: # First move before P2 joins
             pass # P1 is notified when P2 joins
-        elif board.count(mover_symbol) == 1 and p_o_id: # First move by O
+        elif board.count(mover_symbol) == 1 and str(sender_id) == p_o_id: # First move by O
              response_x = f"Player {mover_sn} has joined your game!\n{board_str}\nIt is your turn (X)."
              send_message(response_x, int(p_x_id), self.interface)
         elif next_player:

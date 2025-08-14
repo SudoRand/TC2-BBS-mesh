@@ -12,6 +12,7 @@ from command_handlers import (
     handle_games_command, handle_return_to_game_command
 )
 from modules.Games.tic_tac_toe import handle_tic_tac_toe_command, handle_tic_tac_toe_steps
+from modules.Games.connect_four import handle_connect_four_command, handle_connect_four_steps
 from db_operations import add_bulletin, add_mail, delete_bulletin, delete_mail, get_db_connection, add_channel
 from js8call_integration import handle_js8call_command, handle_js8call_steps, handle_group_message_selection
 from utils import get_user_state, get_node_short_name, get_node_id_from_num, send_message
@@ -44,6 +45,7 @@ utilities_menu_handlers = {
 
 games_menu_handlers = {
     "t": handle_tic_tac_toe_command,
+    "c": handle_connect_four_command,
     "x": lambda sender_id, interface: handle_help_command(sender_id, interface, 'main')
 }
 
@@ -185,6 +187,8 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                     handle_group_message_selection(sender_id, message, step, state, interface)
                 elif command == 'TIC_TAC_TOE':
                     handle_tic_tac_toe_steps(sender_id, message, step, state, interface)
+                elif command == 'CONNECT_FOUR':
+                    handle_connect_four_steps(sender_id, message, step, state, interface)
                 else:
                     handle_help_command(sender_id, interface)
             else:

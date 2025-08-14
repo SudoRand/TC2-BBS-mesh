@@ -171,7 +171,8 @@ class TestTicTacToe(unittest.TestCase):
         self.assertIn(f"Started by: {p1_sn}", mock_send_message.call_args[0][0])
 
     @patch('modules.Games.game_logic_driver.send_message')
-    def test_remote_game_flow(self, mock_send_message):
+    @patch('modules.Games.tic_tac_toe.send_message')
+    def test_remote_game_flow(self, mock_ttt_send, mock_driver_send):
         mock_interface = MagicMock()
         p1_num = 111; p1_id = '!p1'; p1_sn = 'P1'
         p2_num = 222; p2_id = '!p2'; p2_sn = 'P2'
@@ -180,23 +181,31 @@ class TestTicTacToe(unittest.TestCase):
             p2_id: {'num': p2_num, 'user': {'shortName': p2_sn}},
         }
         with patch('modules.Games.game_logic_driver.get_node_id_from_num', side_effect=lambda num, iface: {p1_num: p1_id, p2_num: p2_id}.get(int(num))):
-            state_p1 = {'command': 'TIC_TAC_TOE', 'step': 10}
-            handle_tic_tac_toe_steps(p1_num, "1", 10, state_p1, mock_interface)
-            self.assertEqual(mock_send_message.call_count, 1)
+            # P1 starts
+            handle_tic_tac_toe_command(p1_num, mock_interface)
+            state_p1 = get_user_state(p1_num)
+            handle_tic_tac_toe_steps(p1_num, '3', state_p1['step'], state_p1, mock_interface) # Remote
+            state_p1 = get_user_state(p1_num)
+            handle_tic_tac_toe_steps(p1_num, '1', state_p1['step'], state_p1, mock_interface) # New
+            self.assertEqual(mock_driver_send.call_count, 1)
             game_id = get_open_games('tic_tac_toe')[0][0]
 
-            state_p1 = {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id}
-            handle_tic_tac_toe_steps(p1_num, "5", 12, state_p1, mock_interface)
-            self.assertEqual(mock_send_message.call_count, 2)
+            # P2 joins
+            handle_tic_tac_toe_command(p2_num, mock_interface)
+            state_p2 = get_user_state(p2_num)
+            handle_tic_tac_toe_steps(p2_num, '3', state_p2['step'], state_p2, mock_interface) # Remote
+            state_p2 = get_user_state(p2_num)
+            handle_tic_tac_toe_steps(p2_num, '2', state_p2['step'], state_p2, mock_interface) # Join
+            state_p2 = get_user_state(p2_num)
+            handle_tic_tac_toe_steps(p2_num, str(game_id), state_p2['step'], state_p2, mock_interface) # Select
+            self.assertEqual(mock_driver_send.call_count, 3)
 
-            state_p2 = {'command': 'TIC_TAC_TOE', 'step': 11}
-            handle_tic_tac_toe_steps(p2_num, str(game_id), 11, state_p2, mock_interface)
-            self.assertEqual(mock_send_message.call_count, 3)
-
-            state_p2 = {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id}
-            handle_tic_tac_toe_steps(p2_num, "1", 12, state_p2, mock_interface)
-            self.assertEqual(mock_send_message.call_count, 5)
-            self.assertIn(f"Player {p2_sn} has joined your game!", mock_send_message.call_args_list[-2][0][0])
+            # P1 makes a move
+            state_p1 = get_user_state(p1_num)
+            handle_tic_tac_toe_steps(p1_num, "5", state_p1['step'], state_p1, mock_interface)
+            self.assertEqual(mock_driver_send.call_count, 5)
+            self.assertIn("has made a move. It's your turn", mock_driver_send.call_args_list[-2][0][0])
+            self.assertIn("Move made. Waiting for opponent", mock_driver_send.call_args_list[-1][0][0])
 
     @patch('command_handlers.handle_help_command')
     @patch('modules.Games.game_logic_driver.send_message')

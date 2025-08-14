@@ -121,7 +121,7 @@ class TestGameLogicDriver(unittest.TestCase):
 
         db_game = get_game_by_id(game_id)
         self.assertEqual(db_game[3], str(self.p2_num)) # player_o
-        self.assertEqual(db_game[5], str(self.p2_num)) # current_player
+        self.assertEqual(db_game[5], str(self.p1_num)) # current_player should still be P1
         self.assertEqual(db_game[7], 'in_progress') # status
 
         self.mock_send_message.assert_called_once_with(
@@ -134,53 +134,53 @@ class TestGameLogicDriver(unittest.TestCase):
         game_id = create_game('mock_game', str(self.p1_num), json.dumps([" "]*4))
         join_game(game_id, str(self.p2_num))
 
-        # P2 makes a move
-        state_p2 = {'game_id': game_id}
-        self.driver.play_move(self.p2_num, "0", state_p2)
+        # P1 makes a move
+        state_p1 = {'game_id': game_id}
+        self.driver.play_move(self.p1_num, "0", state_p1)
 
-        # Assert P1 was notified correctly (second to last message)
+        # Assert P2 was notified correctly (second to last message)
         self.assertEqual(self.mock_send_message.call_count, 2)
-        notify_p1_call = self.mock_send_message.call_args_list[0]
-        self.assertEqual(notify_p1_call[0][1], self.p1_num)
-        self.assertIn(f"Player {self.p2_sn} has joined your game!", notify_p1_call[0][0])
-        self.assertIn("Board: O   ", notify_p1_call[0][0])
-        self.assertIn("It is your turn (X).", notify_p1_call[0][0])
+        notify_p2_call = self.mock_send_message.call_args_list[0]
+        self.assertEqual(notify_p2_call[0][1], self.p2_num)
+        self.assertIn(f"{self.p1_sn} (X) has made a move.", notify_p2_call[0][0])
+        self.assertIn("Board: X   ", notify_p2_call[0][0])
+        self.assertIn("It's your turn (O).", notify_p2_call[0][0])
 
-        # Assert P2 got confirmation (last message)
-        confirm_p2_call = self.mock_send_message.call_args_list[1]
-        self.assertEqual(confirm_p2_call[0][1], self.p2_num)
-        self.assertIn(f"Move made. Waiting for opponent {self.p1_sn} (X).", confirm_p2_call[0][0])
+        # Assert P1 got confirmation (last message)
+        confirm_p1_call = self.mock_send_message.call_args_list[1]
+        self.assertEqual(confirm_p1_call[0][1], self.p1_num)
+        self.assertIn(f"Move made. Waiting for opponent {self.p2_sn} (O).", confirm_p1_call[0][0])
 
         db_game = get_game_by_id(game_id)
-        self.assertEqual(db_game[5], str(self.p1_num)) # current_player is now P1
-        self.assertEqual(json.loads(db_game[4]), ["O", " ", " ", " "]) # board is updated
+        self.assertEqual(db_game[5], str(self.p2_num)) # current_player is now P2
+        self.assertEqual(json.loads(db_game[4]), ["X", " ", " ", " "]) # board is updated
 
     def test_play_move_win_condition(self):
-        # Setup a game where P2 can win
+        # Setup a game where P1 can win
         game_id = create_game('mock_game', str(self.p1_num), json.dumps([" ", " ", " ", " "]))
-        join_game(game_id, str(self.p2_num)) # P2 joins, it's P2's turn
+        join_game(game_id, str(self.p2_num))
 
         state_p1 = {'game_id': game_id}
         state_p2 = {'game_id': game_id}
 
-        # Move 1: P2 moves at 0. Board: ['O', ' ', ' ', ' ']
-        self.driver.play_move(self.p2_num, "0", state_p2)
+        # Move 1: P1 moves at 0. Board: ['X', ' ', ' ', ' ']
+        self.driver.play_move(self.p1_num, "0", state_p1)
         self.assertEqual(self.mock_send_message.call_count, 2)
 
-        # Move 2: P1 moves at 2. Board: ['O', ' ', 'X', ' ']
-        self.driver.play_move(self.p1_num, "2", state_p1)
+        # Move 2: P2 moves at 2. Board: ['X', ' ', 'O', ' ']
+        self.driver.play_move(self.p2_num, "2", state_p2)
         self.assertEqual(self.mock_send_message.call_count, 4)
 
-        # Move 3: P2 makes winning move at 1. Board: ['O', 'O', 'X', ' ']
-        self.driver.play_move(self.p2_num, "1", state_p2)
+        # Move 3: P1 makes winning move at 1. Board: ['X', 'X', 'O', ' ']
+        self.driver.play_move(self.p1_num, "1", state_p1)
 
         # Assert win messages were sent
         self.assertEqual(self.mock_send_message.call_count, 6)
-        win_msg_p2 = self.mock_send_message.call_args_list[-2][0][0] # Message to winner
-        lose_msg_p1 = self.mock_send_message.call_args_list[-1][0][0] # Message to loser
+        win_msg_p1 = self.mock_send_message.call_args_list[-2][0][0]
+        lose_msg_p2 = self.mock_send_message.call_args_list[-1][0][0]
 
-        self.assertIn("Congratulations! You win!", win_msg_p2)
-        self.assertIn(f"Game over. {self.p2_sn} wins.", lose_msg_p1)
+        self.assertIn("Congratulations! You win!", win_msg_p1)
+        self.assertIn(f"Game over. {self.p1_sn} wins.", lose_msg_p2)
 
         # Assert user states were updated to go back to the menu
         self.assertEqual(self.mock_update_user_state.call_count, 2)
@@ -189,7 +189,7 @@ class TestGameLogicDriver(unittest.TestCase):
 
         db_game = get_game_by_id(game_id)
         self.assertEqual(db_game[7], 'finished') # status
-        self.assertEqual(db_game[6], str(self.p2_num)) # winner
+        self.assertEqual(db_game[6], str(self.p1_num)) # winner
 
 if __name__ == '__main__':
     unittest.main()

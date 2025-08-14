@@ -210,7 +210,8 @@ def get_active_games_for_player(game_type, player_id):
 def join_game(game_id, player_o):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE turn_based_games SET player_o = ?, status = 'in_progress', current_player = ? WHERE id = ?", (player_o, player_o, game_id))
+    # When a player joins, it's still player X's turn. Don't update current_player.
+    c.execute("UPDATE turn_based_games SET player_o = ?, status = 'in_progress' WHERE id = ?", (player_o, game_id))
     conn.commit()
 
 def get_game_by_id(game_id):

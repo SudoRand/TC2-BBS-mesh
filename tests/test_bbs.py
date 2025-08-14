@@ -451,29 +451,29 @@ class TestBBS(unittest.TestCase):
         self.message_processing.process_message(user2_id, '2', self.interface)
         self.message_processing.process_message(user2_id, '1', self.interface)
 
-        # Simulate a game where user2 (O) wins
-        # P2's turn
-        self.message_processing.process_message(user2_id, '5', self.interface) # O takes center
+        # Simulate a game where user1 (X) wins
         # P1's turn
-        self.message_processing.process_message(user1_id, '1', self.interface) # X takes top-left
+        self.message_processing.process_message(user1_id, '1', self.interface)
         # P2's turn
-        self.message_processing.process_message(user2_id, '2', self.interface) # O takes top-center
+        self.message_processing.process_message(user2_id, '4', self.interface)
         # P1's turn
-        self.message_processing.process_message(user1_id, '3', self.interface) # X takes top-right
-        # P2's turn (winning move)
-        self.message_processing.process_message(user2_id, '8', self.interface) # O wins with 2,5,8
+        self.message_processing.process_message(user1_id, '2', self.interface)
+        # P2's turn
+        self.message_processing.process_message(user2_id, '5', self.interface)
+        # P1's turn (winning move)
+        self.message_processing.process_message(user1_id, '3', self.interface)
 
-        # Check that the win message is displayed for user2
+        # Check that the win message is displayed for user1
         all_calls = mock_ttt_send.call_args_list + mock_driver_send.call_args_list
         found_win_message = False
         for call in all_calls:
             # The winner is sent the "You win!" message
             if "Congratulations! You win!" in call[0][0]:
-                # Ensure it was sent to user2
-                if int(call[0][1]) == user2_id:
+                # Ensure it was sent to user1
+                if int(call[0][1]) == user1_id:
                     found_win_message = True
                     break
-        self.assertTrue(found_win_message, "Win message not found for user2")
+        self.assertTrue(found_win_message, "Win message not found for user1")
 
     def test_simulator_send_from_another_node(self):
         with patch('builtins.input', side_effect=['SIM2: help', EOFError]):

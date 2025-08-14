@@ -9,7 +9,8 @@ from db_operations import (
     add_bulletin, add_mail, delete_mail,
     get_bulletin_content, get_bulletins,
     get_mail, get_mail_content,
-    add_channel, get_channels, get_sender_id_by_mail_id
+    add_channel, get_channels, get_sender_id_by_mail_id,
+    get_game_by_id
 )
 from utils import (
     get_node_id_from_num, get_node_info,
@@ -17,6 +18,7 @@ from utils import (
     update_user_state, get_user_state
 )
 from modules.Games.tic_tac_toe import handle_tic_tac_toe_command
+from modules.Games.connect_four import handle_connect_four_command, ConnectFourGame
 from modules.Games.game_logic_driver import GameLogicDriver
 from modules.Games.tic_tac_toe import TicTacToeGame
 
@@ -48,6 +50,8 @@ def build_menu(items, menu_name):
             menu_str += "[RG]eturn to Game\n"
         elif item.strip() == 'T':
             menu_str += "[T]ic Tac Toe\n"
+        elif item.strip() == 'C' and menu_name == "🎮Games Menu🎮":
+            menu_str += "[C]onnect 4\n"
         elif item.strip() == 'X':
             menu_str += "E[X]IT\n"
         elif item.strip() == 'M':
@@ -102,18 +106,40 @@ def handle_games_command(sender_id, interface):
 
 def handle_return_to_game_command(sender_id, interface):
     state = get_user_state(sender_id)
-    if state and 'active_game_id' in state:
-        game_id = state['active_game_id']
-        # TODO: This assumes the only pausable game is Tic-Tac-Toe.
-        # This should be refactored to handle multiple game types.
-        game_instance = TicTacToeGame()
-        driver = GameLogicDriver(game_instance, interface)
+    if not state or 'active_game_id' not in state:
+        send_message("You don't have an active game to return to.", sender_id, interface)
+        handle_help_command(sender_id, interface)
+        return
 
-        update_user_state(sender_id, {'command': 'TIC_TAC_TOE', 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
+    game_id = state['active_game_id']
+    game_data = get_game_by_id(game_id)
+
+    if not game_data:
+        send_message("Could not find your active game. It may have ended.", sender_id, interface)
+        update_user_state(sender_id, {'command': 'MAIN_MENU', 'step': 1})
+        handle_help_command(sender_id, interface)
+        return
+
+    game_type = game_data[1]
+    game_instance = None
+    command_str = None
+
+    if game_type == 'tic_tac_toe':
+        game_instance = TicTacToeGame()
+        command_str = 'TIC_TAC_TOE'
+    elif game_type == 'connect_four':
+        game_instance = ConnectFourGame()
+        command_str = 'CONNECT_FOUR'
+
+    if game_instance and command_str:
+        driver = GameLogicDriver(game_instance, interface)
+        update_user_state(sender_id, {'command': command_str, 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
         driver.redisplay_game_board(sender_id, game_id)
     else:
-        # Should not happen if the menu is built correctly, but handle it just in case
-        send_message("You don't have an active game to return to.", sender_id, interface)
+        send_message(f"Error: Unknown game type '{game_type}' for your active game.", sender_id, interface)
+        # Clear the broken active game state
+        state.pop('active_game_id', None)
+        update_user_state(sender_id, state)
         handle_help_command(sender_id, interface)
 
 def get_node_name(node_id, interface):
