@@ -25,15 +25,14 @@ class GameLogicDriver:
         self.interface = interface
         self.game_type = self.game.game_type
 
-    def start_new_game(self, sender_id):
-        """Starts a new remote game."""
-        initial_board = self.game.get_initial_board()
-        board_json = json.dumps(initial_board)
+    def create_game_with_first_move(self, sender_id, board):
+        """Creates a new game in the database after the first move."""
+        board_json = json.dumps(board)
+        # current_player is left NULL, to be set when P2 joins.
         game_id = create_game(self.game_type, str(sender_id), board_json)
 
-        instruction_board = self.game.get_instruction_board()
-        board_str = self.game.render_board(initial_board, None, None)
-        response = f"New game started. Game ID: {game_id}.\n\n{instruction_board}\n\n{board_str}\nYou are X. Enter your move, or E[X]IT to pause."
+        board_str = self.game.render_board(board, None, None)
+        response = f"Your game (ID: {game_id}) is now listed and waiting for an opponent.\n\n{board_str}"
         send_message(response, sender_id, self.interface)
         return game_id
 

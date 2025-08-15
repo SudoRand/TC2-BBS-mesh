@@ -415,10 +415,11 @@ class TestBBS(unittest.TestCase):
             return None
         self.mock_get_node_id.side_effect = get_node_id_side_effect
 
-        # user1 starts a remote game
+        # user1 starts a remote game and makes a move
         self.message_processing.process_message(user1_id, 'g', self.interface)
         self.message_processing.process_message(user1_id, 't', self.interface)
-        self.message_processing.process_message(user1_id, 'n', self.interface) # New game
+        self.message_processing.process_message(user1_id, 'n', self.interface)
+        self.message_processing.process_message(user1_id, '1', self.interface) # P1 moves
 
         # user2 joins the game
         self.message_processing.process_message(user2_id, 'g', self.interface)
@@ -426,16 +427,25 @@ class TestBBS(unittest.TestCase):
         self.message_processing.process_message(user2_id, '1', self.interface) # Join game ID 1
 
         # Simulate a game where user1 (X) wins
-        # P1's turn
-        self.message_processing.process_message(user1_id, '1', self.interface)
         # P2's turn
         self.message_processing.process_message(user2_id, '4', self.interface)
-        # P1's turn
-        self.message_processing.process_message(user1_id, '2', self.interface)
+
+        # P1 must continue the game to make a move
+        self.message_processing.process_message(user1_id, 'g', self.interface)
+        self.message_processing.process_message(user1_id, 't', self.interface)
+        self.message_processing.process_message(user1_id, 'c', self.interface)
+        self.message_processing.process_message(user1_id, '1', self.interface)
+        self.message_processing.process_message(user1_id, '2', self.interface) # P1 moves
+
         # P2's turn
         self.message_processing.process_message(user2_id, '5', self.interface)
-        # P1's turn (winning move)
-        self.message_processing.process_message(user1_id, '3', self.interface)
+
+        # P1 must continue the game to make a move
+        self.message_processing.process_message(user1_id, 'g', self.interface)
+        self.message_processing.process_message(user1_id, 't', self.interface)
+        self.message_processing.process_message(user1_id, 'c', self.interface)
+        self.message_processing.process_message(user1_id, '1', self.interface)
+        self.message_processing.process_message(user1_id, '3', self.interface) # P1 wins
 
         # Check that the win message is displayed for user1
         all_calls = mock_ttt_send.call_args_list + mock_driver_send.call_args_list

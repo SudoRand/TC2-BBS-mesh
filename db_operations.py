@@ -179,14 +179,16 @@ def get_sender_id_by_mail_id(mail_id):
 
 # --- Generic Turn-Based Game Functions ---
 
-def create_game(game_type, player_x, initial_board_json, unique_id=None):
+def create_game(game_type, player_x, board_json, unique_id=None):
     conn = get_db_connection()
     c = conn.cursor()
     if not unique_id:
         unique_id = str(uuid.uuid4())
+
+    # current_player is intentionally left NULL. It will be set when player_o joins.
     c.execute(
-        "INSERT INTO turn_based_games (game_type, player_x, board, current_player, status, unique_id) VALUES (?, ?, ?, ?, ?, ?)",
-        (game_type, player_x, initial_board_json, player_x, "waiting", unique_id)
+        "INSERT INTO turn_based_games (game_type, player_x, board, status, unique_id) VALUES (?, ?, ?, ?, ?)",
+        (game_type, player_x, board_json, "waiting", unique_id)
     )
     conn.commit()
     return c.lastrowid
@@ -210,8 +212,8 @@ def get_active_games_for_player(game_type, player_id):
 def join_game(game_id, player_o):
     conn = get_db_connection()
     c = conn.cursor()
-    # When a player joins, it's still player X's turn. Don't update current_player.
-    c.execute("UPDATE turn_based_games SET player_o = ?, status = 'in_progress' WHERE id = ?", (player_o, game_id))
+    # When player_o joins, they become the current player.
+    c.execute("UPDATE turn_based_games SET player_o = ?, status = 'in_progress', current_player = ? WHERE id = ?", (player_o, player_o, game_id))
     conn.commit()
 
 def get_game_by_id(game_id):

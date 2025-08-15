@@ -120,8 +120,11 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
 
     if step == 1: # Unified menu handler
         if message == 'n':
-            game_id = driver.start_new_game(sender_id)
-            update_user_state(sender_id, {'command': command_str, 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
+            # Prompt for first move
+            board = game_instance.get_initial_board()
+            response = f"New game started. Please make your first move.\n\n{game_instance.render_board(board)}"
+            send_message(response, sender_id, interface)
+            update_user_state(sender_id, {'command': command_str, 'step': 14, 'board': board})
         elif message == 'c':
             active_games = get_active_games_for_player(game_instance.game_type, str(sender_id))
             response = "Your active games:\n"
@@ -156,3 +159,15 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             driver.redisplay_game_board(sender_id, game_id)
         except ValueError:
             send_message("Invalid game ID. Please enter a number.", sender_id, interface)
+
+    elif step == 14: # Player 1 makes the first move
+        board = state.get('board')
+        try:
+            updated_board = game_instance.handle_move(board, message, 'X')
+            game_id = driver.create_game_with_first_move(sender_id, updated_board)
+            # The game is now created and waiting for P2. P1 is done for now.
+            update_user_state(sender_id, {'command': 'MAIN_MENU', 'step': 1, 'active_game_id': game_id})
+        except ValueError as e:
+            send_message(f"Invalid move: {e}\nPlease try again.", sender_id, interface)
+            # Keep the user at step 14 to let them re-enter their move.
+            update_user_state(sender_id, state)
