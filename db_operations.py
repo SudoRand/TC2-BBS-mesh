@@ -57,6 +57,7 @@ def initialize_database():
                     current_player TEXT,
                     winner TEXT,
                     status TEXT,
+                    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     unique_id TEXT NOT NULL UNIQUE
                 );''')
     conn.commit()
@@ -209,11 +210,28 @@ def get_active_games_for_player(game_type, player_id):
     """, (game_type, player_id, player_id))
     return c.fetchall()
 
+def get_active_games(limit=3):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, game_type, player_x, player_o FROM turn_based_games
+        WHERE status = 'in_progress'
+        ORDER BY last_activity DESC
+        LIMIT ?
+    """, (limit,))
+    return c.fetchall()
+
+def count_active_games():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM turn_based_games WHERE status = 'in_progress'")
+    return c.fetchone()[0]
+
 def join_game(game_id, player_o):
     conn = get_db_connection()
     c = conn.cursor()
-    # When player_o joins, they become the current player.
-    c.execute("UPDATE turn_based_games SET player_o = ?, status = 'in_progress', current_player = ? WHERE id = ?", (player_o, player_o, game_id))
+    # When player_o joins, they become the current player and activity is updated.
+    c.execute("UPDATE turn_based_games SET player_o = ?, status = 'in_progress', current_player = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?", (player_o, player_o, game_id))
     conn.commit()
 
 def get_game_by_id(game_id):
@@ -225,7 +243,7 @@ def get_game_by_id(game_id):
 def update_game_board(game_id, board, current_player):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE turn_based_games SET board = ?, current_player = ? WHERE id = ?", (board, current_player, game_id))
+    c.execute("UPDATE turn_based_games SET board = ?, current_player = ?, last_activity = CURRENT_TIMESTAMP WHERE id = ?", (board, current_player, game_id))
     conn.commit()
 
 def end_game(game_id, winner):

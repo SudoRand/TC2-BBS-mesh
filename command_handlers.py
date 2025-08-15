@@ -10,7 +10,7 @@ from db_operations import (
     get_bulletin_content, get_bulletins,
     get_mail, get_mail_content,
     add_channel, get_channels, get_sender_id_by_mail_id,
-    get_game_by_id
+    get_game_by_id, get_active_games, count_active_games
 )
 from utils import (
     get_node_id_from_num, get_node_info,
@@ -94,7 +94,24 @@ def handle_help_command(sender_id, interface, menu_name=None):
                 current_menu_items.append('RG')
 
         mail = get_mail(get_node_id_from_num(sender_id, interface))
+
+        active_games_list = get_active_games(limit=3)
+        total_active_games = count_active_games()
+
+        active_games_str = ""
+        if active_games_list:
+            active_games_str = "\n\n--- Active Games ---\n"
+            for game_id, game_type, p_x_id, p_o_id in active_games_list:
+                p_x_sn = get_node_short_name(p_x_id, interface) if p_x_id else "N/A"
+                p_o_sn = get_node_short_name(p_o_id, interface) if p_o_id else "N/A"
+                game_name = "C4" if game_type == 'connect_four' else "TTT"
+                active_games_str += f"{game_name} ({game_id}): {p_x_sn} vs {p_o_sn}\n"
+            if total_active_games > 3:
+                active_games_str += f"...and {total_active_games - 3} more.\n"
+
         response = build_menu(current_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)})")
+        response = active_games_str + response
+
     send_message(response, sender_id, interface)
 
 

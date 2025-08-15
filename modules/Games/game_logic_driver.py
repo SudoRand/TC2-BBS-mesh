@@ -93,7 +93,7 @@ class GameLogicDriver:
         if not self._validate_game_state(sender_id, game_data):
             return
 
-        _, _, player_x, player_o, board_json, current_player, _, status, _ = game_data
+        _, _, player_x, player_o, board_json, current_player, _, status, _, _ = game_data
 
         if player_o is None:
             send_message("Waiting for an opponent to join before you can make a move.", sender_id, self.interface)
@@ -135,7 +135,7 @@ class GameLogicDriver:
         if not self._validate_game_state(sender_id, game_data, is_redisplay=True):
             return
 
-        game_id, _, player_x, player_o, board_json, current_player, winner, status, _ = game_data
+        game_id, _, player_x, player_o, board_json, current_player, winner, status, _, _ = game_data
         board = json.loads(board_json)
 
         player_x_sn = get_node_short_name(get_node_id_from_num(int(player_x), self.interface), self.interface)

@@ -401,6 +401,29 @@ class TestBBS(unittest.TestCase):
         call_args, _ = self.mock_send_message.call_args
         self.assertIn("battery levels below 20%", call_args[0])
 
+    @patch('modules.Games.tic_tac_toe.send_message')
+    def test_tic_tac_toe_win(self, mock_send_message):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Go to the games menu
+        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        state = self.message_processing.process_message(sender_id, 'g', self.interface)
+        state = self.message_processing.process_message(sender_id, 't', self.interface)
+        state = self.message_processing.process_message(sender_id, '1', self.interface) # pvp
+
+        # Simulate a game where X wins
+        self.message_processing.process_message(sender_id, '1', self.interface)
+        self.message_processing.process_message(sender_id, '4', self.interface)
+        self.message_processing.process_message(sender_id, '2', self.interface)
+        self.message_processing.process_message(sender_id, '5', self.interface)
+        self.message_processing.process_message(sender_id, '3', self.interface)
+
+        # Check that the win message is displayed
+        mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
+        last_call = mock_send_message.call_args_list[-1]
+        call_args, _ = last_call
+        self.assertIn("Congratulations! X wins!", call_args[0])
+
     @patch('modules.Games.game_logic_driver.send_message')
     @patch('modules.Games.tic_tac_toe.send_message')
     def test_tic_tac_toe_remote_game(self, mock_ttt_send, mock_driver_send):
@@ -415,47 +438,42 @@ class TestBBS(unittest.TestCase):
             return None
         self.mock_get_node_id.side_effect = get_node_id_side_effect
 
-        # user1 starts a remote game and makes a move
+        # user1 starts a remote game
         self.message_processing.process_message(user1_id, 'g', self.interface)
         self.message_processing.process_message(user1_id, 't', self.interface)
-        self.message_processing.process_message(user1_id, 'n', self.interface)
-        self.message_processing.process_message(user1_id, '1', self.interface) # P1 moves
+        self.message_processing.process_message(user1_id, '3', self.interface)
+        self.message_processing.process_message(user1_id, '1', self.interface)
 
         # user2 joins the game
         self.message_processing.process_message(user2_id, 'g', self.interface)
         self.message_processing.process_message(user2_id, 't', self.interface)
-        self.message_processing.process_message(user2_id, '1', self.interface) # Join game ID 1
+        self.message_processing.process_message(user2_id, '3', self.interface)
+        self.message_processing.process_message(user2_id, '2', self.interface)
+        self.message_processing.process_message(user2_id, '1', self.interface)
 
-        # Simulate a game where user1 (X) wins
+        # Simulate a game where user2 (O) wins
         # P2's turn
-        self.message_processing.process_message(user2_id, '4', self.interface)
-
-        # P1 must continue the game to make a move
-        self.message_processing.process_message(user1_id, 'g', self.interface)
-        self.message_processing.process_message(user1_id, 't', self.interface)
-        self.message_processing.process_message(user1_id, '1', self.interface) # Continue game ID 1
-        self.message_processing.process_message(user1_id, '2', self.interface) # P1 moves
-
+        self.message_processing.process_message(user2_id, '5', self.interface) # O takes center
+        # P1's turn
+        self.message_processing.process_message(user1_id, '1', self.interface) # X takes top-left
         # P2's turn
-        self.message_processing.process_message(user2_id, '5', self.interface)
+        self.message_processing.process_message(user2_id, '2', self.interface) # O takes top-center
+        # P1's turn
+        self.message_processing.process_message(user1_id, '3', self.interface) # X takes top-right
+        # P2's turn (winning move)
+        self.message_processing.process_message(user2_id, '8', self.interface) # O wins with 2,5,8
 
-        # P1 must continue the game to make a move
-        self.message_processing.process_message(user1_id, 'g', self.interface)
-        self.message_processing.process_message(user1_id, 't', self.interface)
-        self.message_processing.process_message(user1_id, '1', self.interface) # Continue game ID 1
-        self.message_processing.process_message(user1_id, '3', self.interface) # P1 wins
-
-        # Check that the win message is displayed for user1
+        # Check that the win message is displayed for user2
         all_calls = mock_ttt_send.call_args_list + mock_driver_send.call_args_list
         found_win_message = False
         for call in all_calls:
             # The winner is sent the "You win!" message
             if "Congratulations! You win!" in call[0][0]:
-                # Ensure it was sent to user1
-                if int(call[0][1]) == user1_id:
+                # Ensure it was sent to user2
+                if int(call[0][1]) == user2_id:
                     found_win_message = True
                     break
-        self.assertTrue(found_win_message, "Win message not found for user1")
+        self.assertTrue(found_win_message, "Win message not found for user2")
 
     def test_simulator_send_from_another_node(self):
         with patch('builtins.input', side_effect=['SIM2: help', EOFError]):

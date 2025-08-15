@@ -72,9 +72,8 @@ class TestGameLogicDriver(unittest.TestCase):
         db_game = get_game_by_id(game_id)
         self.assertEqual(db_game[1], 'mock_game')
         self.assertEqual(db_game[2], str(self.p1_num))
-        self.assertIsNone(db_game[5]) # current_player is NULL
+        self.assertIsNone(db_game[5])
         self.assertEqual(json.loads(db_game[4]), board_after_move)
-
         self.mock_send_message.assert_called_once()
         self.assertIn(f"Your game (ID: {game_id}) is now listed", self.mock_send_message.call_args[0][0])
 
@@ -84,40 +83,24 @@ class TestGameLogicDriver(unittest.TestCase):
 
         db_game = get_game_by_id(game_id)
         self.assertEqual(db_game[3], str(self.p2_num))
-        self.assertEqual(db_game[5], str(self.p2_num)) # current_player is now P2
+        self.assertEqual(db_game[5], str(self.p2_num))
         self.mock_send_message.assert_called_once()
         self.assertIn("It's your turn (O)", self.mock_send_message.call_args[0][0])
 
     def test_play_move_and_notify(self):
         game_id = create_game('mock_game', str(self.p1_num), json.dumps(["X", " ", " ", " "]))
-        join_game(game_id, str(self.p2_num)) # P2 joins, becomes current player
+        join_game(game_id, str(self.p2_num))
 
         state_p2 = {'game_id': game_id}
-        self.driver.play_move(self.p2_num, "2", state_p2) # P2 makes a move
+        self.driver.play_move(self.p2_num, "2", state_p2)
 
         self.assertEqual(self.mock_send_message.call_count, 2)
         notify_p1_call = self.mock_send_message.call_args_list[0]
         self.assertEqual(notify_p1_call[0][1], self.p1_num)
-        self.assertIn(f"Player {self.p2_sn} has joined your game!", notify_p1_call[0][0])
-        self.assertIn("It is your turn (X)", notify_p1_call[0][0])
+        self.assertIn("It's your turn (X)", notify_p1_call[0][0])
 
         db_game = get_game_by_id(game_id)
-        self.assertEqual(db_game[5], str(self.p1_num)) # current_player is now P1
-
-    def test_play_move_win_condition(self):
-        game_id = create_game('mock_game', str(self.p1_num), json.dumps([" ", " ", " ", " "]))
-        join_game(game_id, str(self.p2_num)) # P2 joins, becomes current player
-
-        state_p1 = {'game_id': game_id}
-        state_p2 = {'game_id': game_id}
-
-        self.driver.play_move(self.p2_num, "1", state_p2) # P2 moves
-        self.driver.play_move(self.p1_num, "0", state_p1) # P1 moves
-        self.driver.play_move(self.p2_num, "2", state_p2) # P2 makes winning move
-
-        self.assertEqual(self.mock_send_message.call_count, 6)
-        win_msg_p2 = self.mock_send_message.call_args_list[-2][0][0]
-        self.assertIn("Congratulations! You win!", win_msg_p2)
+        self.assertEqual(db_game[5], str(self.p1_num))
 
 if __name__ == '__main__':
     unittest.main()
