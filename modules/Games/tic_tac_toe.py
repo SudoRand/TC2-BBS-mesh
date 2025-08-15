@@ -75,28 +75,35 @@ class TicTacToeGame(GameInterface):
 def handle_tic_tac_toe_command(sender_id, interface):
     """
     Main entry point for the Tic Tac Toe game.
-    Displays open games and options to start a new one or continue.
+    Displays open games to join and active games to continue.
     """
     game_instance = TicTacToeGame()
+    player_id_str = str(sender_id)
 
-    open_games = get_open_games(game_instance.game_type)
-    active_games = get_active_games_for_player(game_instance.game_type, str(sender_id))
+    joinable_games = [g for g in get_open_games(game_instance.game_type) if g[1] != player_id_str]
+    all_active_games = get_active_games_for_player(game_instance.game_type, player_id_str)
+    continuable_games = [g for g in all_active_games if g[3] == 'in_progress']
 
-    menu = f"Welcome to {menu_name}!\n\n"
-    if open_games:
-        menu += "Join an open game by entering its ID:\n"
-        for game_id, player_x_id, _ in open_games:
+    menu = f"Welcome to {menu_name}!\n"
+
+    if joinable_games:
+        menu += "\nJoin an open game by entering its ID:\n"
+        for game_id, player_x_id, _ in joinable_games:
             node_id = get_node_id_from_num(int(player_x_id), interface)
             short_name = get_node_short_name(node_id, interface) if node_id else f"Unknown ({player_x_id})"
             menu += f"ID: {game_id}, Started by: {short_name}\n"
     else:
-        menu += "No open games to join.\n"
+        menu += "\nNo open games to join.\n"
+
+    if continuable_games:
+        menu += "\nContinue your game by entering its ID:\n"
+        for game_id, player_x, player_o, status in continuable_games:
+            opponent_id = player_o if player_id_str == player_x else player_x
+            opponent_node_id = get_node_id_from_num(int(opponent_id), interface)
+            opponent_sn = get_node_short_name(opponent_node_id, interface) if opponent_node_id else "Unknown"
+            menu += f"ID: {game_id}, Opponent: {opponent_sn}\n"
 
     menu += "\nOr [N]EW to create a new one.\n"
-
-    if any(g[3] in ('in_progress', 'waiting') for g in active_games):
-        menu += "Or [C]ONTINUE an active game.\n"
-
     menu += "E[X]IT to return to the main menu."
 
     send_message(menu, sender_id, interface)
@@ -120,28 +127,29 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
 
     if step == 1: # Unified menu handler
         if message == 'n':
-            # Prompt for first move
             board = game_instance.get_initial_board()
             response = f"New game started. Please make your first move.\n\n{game_instance.render_board(board)}"
             send_message(response, sender_id, interface)
             update_user_state(sender_id, {'command': command_str, 'step': 14, 'board': board})
-        elif message == 'c':
-            active_games = get_active_games_for_player(game_instance.game_type, str(sender_id))
-            response = "Your active games:\n"
-            for game_id, player_x, player_o, status in active_games:
-                opponent_id = player_o if str(sender_id) == player_x else player_x
-                opponent_sn = "Waiting..."
-                if opponent_id:
-                    opponent_node_id = get_node_id_from_num(int(opponent_id), interface)
-                    opponent_sn = get_node_short_name(opponent_node_id, interface)
-                response += f"ID: {game_id}, Opponent: {opponent_sn}, Status: {status}\n"
-            response += "\nEnter the ID of the game you want to continue."
-            send_message(response, sender_id, interface)
-            update_user_state(sender_id, {'command': command_str, 'step': 13})
         elif message.isdigit():
-            game_id = driver.join_game_by_id(sender_id, message)
-            if game_id:
+            game_id = int(message)
+            player_id_str = str(sender_id)
+
+            all_active_games = get_active_games_for_player(game_instance.game_type, player_id_str)
+            continuable_ids = [g[0] for g in all_active_games]
+
+            open_games = get_open_games(game_instance.game_type)
+            joinable_ids = [g[0] for g in open_games]
+
+            if game_id in continuable_ids:
                 update_user_state(sender_id, {'command': command_str, 'step': 12, 'game_id': game_id, 'active_game_id': game_id})
+                driver.redisplay_game_board(sender_id, game_id)
+            elif game_id in joinable_ids:
+                joined_id = driver.join_game_by_id(sender_id, str(game_id))
+                if joined_id:
+                    update_user_state(sender_id, {'command': command_str, 'step': 12, 'game_id': joined_id, 'active_game_id': joined_id})
+            else:
+                send_message("Invalid game ID.", sender_id, interface)
         else:
             send_message("Invalid choice. Please try again.", sender_id, interface)
 

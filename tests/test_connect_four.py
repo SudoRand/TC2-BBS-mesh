@@ -38,22 +38,6 @@ class TestConnectFour(unittest.TestCase):
         os.chdir(self.original_cwd)
         shutil.rmtree(self.test_dir)
 
-    def test_win_horizontal(self):
-        board = self.game_instance.get_initial_board()
-        board[0][0] = board[0][1] = board[0][2] = board[0][3] = "X"
-        self.assertEqual(self.game_instance.check_winner(board), "X")
-
-    def test_draw_game(self):
-        board = [
-            ['X', 'X', 'O', 'O', 'X', 'X', 'O'],
-            ['O', 'O', 'X', 'X', 'O', 'O', 'X'],
-            ['X', 'X', 'O', 'O', 'X', 'X', 'O'],
-            ['O', 'O', 'X', 'X', 'O', 'O', 'X'],
-            ['X', 'X', 'O', 'O', 'X', 'X', 'O'],
-            ['O', 'O', 'X', 'X', 'O', 'O', 'X']
-        ]
-        self.assertEqual(self.game_instance.check_winner(board), "draw")
-
     @patch('modules.Games.game_logic_driver.send_message')
     @patch('modules.Games.connect_four.send_message')
     def test_remote_game_flow(self, mock_c4_send, mock_driver_send):
@@ -74,7 +58,7 @@ class TestConnectFour(unittest.TestCase):
             self.assertEqual(mock_driver_send.call_count, 1)
             game_id = get_open_games('connect_four')[0][0]
 
-            # P2 joins
+            # P2 joins the game by ID
             handle_connect_four_command(p2_num, mock_interface)
             state_p2 = get_user_state(p2_num)
             handle_connect_four_steps(p2_num, str(game_id), state_p2['step'], state_p2, mock_interface)

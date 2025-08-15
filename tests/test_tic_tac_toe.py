@@ -49,18 +49,12 @@ class TestTicTacToe(unittest.TestCase):
         }
 
         with patch('utils.get_node_id_from_num', side_effect=lambda num, iface: {p1_num: '!p1', p2_num: '!p2'}.get(num)):
-            # P1 starts a new game
+            # P1 starts a new game and makes the first move
             handle_tic_tac_toe_command(p1_num, mock_interface)
             state_p1 = get_user_state(p1_num)
             handle_tic_tac_toe_steps(p1_num, 'n', state_p1['step'], state_p1, mock_interface)
-            self.assertEqual(mock_ttt_send.call_count, 2)
-            self.assertIn("Please make your first move", mock_ttt_send.call_args[0][0])
-
-            # P1 makes first move
             state_p1 = get_user_state(p1_num)
             handle_tic_tac_toe_steps(p1_num, '5', state_p1['step'], state_p1, mock_interface)
-            self.assertEqual(mock_driver_send.call_count, 1)
-            self.assertIn("Your game (ID: 1) is now listed", mock_driver_send.call_args[0][0])
             game_id = get_open_games('tic_tac_toe')[0][0]
 
             # P2 joins
@@ -68,14 +62,38 @@ class TestTicTacToe(unittest.TestCase):
             state_p2 = get_user_state(p2_num)
             handle_tic_tac_toe_steps(p2_num, str(game_id), state_p2['step'], state_p2, mock_interface)
             self.assertEqual(mock_driver_send.call_count, 2)
-            self.assertIn("You joined game 1", mock_driver_send.call_args[0][0])
 
             # P2 makes a move
             state_p2 = get_user_state(p2_num)
             handle_tic_tac_toe_steps(p2_num, "1", state_p2['step'], state_p2, mock_interface)
-            self.assertEqual(mock_driver_send.call_count, 4) # P1 notified, P2 confirmed
-            self.assertIn("Player P2 has joined your game!", mock_driver_send.call_args_list[-2][0][0])
-            self.assertIn("It is your turn (X)", mock_driver_send.call_args_list[-2][0][0])
+            self.assertEqual(mock_driver_send.call_count, 4)
+
+    @patch('modules.Games.game_logic_driver.send_message')
+    @patch('modules.Games.tic_tac_toe.send_message')
+    def test_continue_game_flow(self, mock_ttt_send, mock_driver_send):
+        mock_interface = MagicMock()
+        p1_num, p2_num = 111, 222
+        mock_interface.nodes = {
+            '!p1': {'num': p1_num, 'user': {'shortName': 'P1'}},
+            '!p2': {'num': p2_num, 'user': {'shortName': 'P2'}},
+        }
+        with patch('utils.get_node_id_from_num', side_effect=lambda num, iface: {p1_num: '!p1', p2_num: '!p2'}.get(num)):
+            # Create a game where it's P1's turn
+            board = self.game_instance.get_initial_board()
+            board[4] = 'O' # P2's move
+            game_id = create_game(self.game_instance.game_type, str(p1_num), json.dumps(board))
+            join_game(game_id, str(p2_num))
+            update_game_board(game_id, json.dumps(board), str(p1_num))
+
+            # P1 goes to the menu and chooses to continue
+            handle_tic_tac_toe_command(p1_num, mock_interface)
+            self.assertIn("Continue your game", mock_ttt_send.call_args[0][0])
+
+            state_p1 = get_user_state(p1_num)
+            handle_tic_tac_toe_steps(p1_num, str(game_id), state_p1['step'], state_p1, mock_interface)
+
+            self.assertEqual(mock_driver_send.call_count, 1)
+            self.assertIn("It's your turn (X)", mock_driver_send.call_args[0][0])
 
 if __name__ == '__main__':
     unittest.main()

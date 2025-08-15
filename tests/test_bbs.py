@@ -433,8 +433,7 @@ class TestBBS(unittest.TestCase):
         # P1 must continue the game to make a move
         self.message_processing.process_message(user1_id, 'g', self.interface)
         self.message_processing.process_message(user1_id, 't', self.interface)
-        self.message_processing.process_message(user1_id, 'c', self.interface)
-        self.message_processing.process_message(user1_id, '1', self.interface)
+        self.message_processing.process_message(user1_id, '1', self.interface) # Continue game ID 1
         self.message_processing.process_message(user1_id, '2', self.interface) # P1 moves
 
         # P2's turn
@@ -443,8 +442,7 @@ class TestBBS(unittest.TestCase):
         # P1 must continue the game to make a move
         self.message_processing.process_message(user1_id, 'g', self.interface)
         self.message_processing.process_message(user1_id, 't', self.interface)
-        self.message_processing.process_message(user1_id, 'c', self.interface)
-        self.message_processing.process_message(user1_id, '1', self.interface)
+        self.message_processing.process_message(user1_id, '1', self.interface) # Continue game ID 1
         self.message_processing.process_message(user1_id, '3', self.interface) # P1 wins
 
         # Check that the win message is displayed for user1
