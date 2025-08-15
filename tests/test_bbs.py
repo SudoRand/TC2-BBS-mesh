@@ -401,29 +401,6 @@ class TestBBS(unittest.TestCase):
         call_args, _ = self.mock_send_message.call_args
         self.assertIn("battery levels below 20%", call_args[0])
 
-    @patch('modules.Games.tic_tac_toe.send_message')
-    def test_tic_tac_toe_win(self, mock_send_message):
-        sender_id = 1
-        self.mock_get_node_id.return_value = '!a_mock_node_id'
-        # Go to the games menu
-        state = self.message_processing.process_message(sender_id, 'help', self.interface)
-        state = self.message_processing.process_message(sender_id, 'g', self.interface)
-        state = self.message_processing.process_message(sender_id, 't', self.interface)
-        state = self.message_processing.process_message(sender_id, '1', self.interface) # pvp
-
-        # Simulate a game where X wins
-        self.message_processing.process_message(sender_id, '1', self.interface)
-        self.message_processing.process_message(sender_id, '4', self.interface)
-        self.message_processing.process_message(sender_id, '2', self.interface)
-        self.message_processing.process_message(sender_id, '5', self.interface)
-        self.message_processing.process_message(sender_id, '3', self.interface)
-
-        # Check that the win message is displayed
-        mock_send_message.assert_any_call(unittest.mock.ANY, sender_id, self.interface)
-        last_call = mock_send_message.call_args_list[-1]
-        call_args, _ = last_call
-        self.assertIn("Congratulations! X wins!", call_args[0])
-
     @patch('modules.Games.game_logic_driver.send_message')
     @patch('modules.Games.tic_tac_toe.send_message')
     def test_tic_tac_toe_remote_game(self, mock_ttt_send, mock_driver_send):
@@ -441,15 +418,12 @@ class TestBBS(unittest.TestCase):
         # user1 starts a remote game
         self.message_processing.process_message(user1_id, 'g', self.interface)
         self.message_processing.process_message(user1_id, 't', self.interface)
-        self.message_processing.process_message(user1_id, '3', self.interface)
-        self.message_processing.process_message(user1_id, '1', self.interface)
+        self.message_processing.process_message(user1_id, 'n', self.interface) # New game
 
         # user2 joins the game
         self.message_processing.process_message(user2_id, 'g', self.interface)
         self.message_processing.process_message(user2_id, 't', self.interface)
-        self.message_processing.process_message(user2_id, '3', self.interface)
-        self.message_processing.process_message(user2_id, '2', self.interface)
-        self.message_processing.process_message(user2_id, '1', self.interface)
+        self.message_processing.process_message(user2_id, '1', self.interface) # Join game ID 1
 
         # Simulate a game where user1 (X) wins
         # P1's turn
