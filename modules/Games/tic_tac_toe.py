@@ -128,8 +128,9 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
     if step == 1: # Unified menu handler
         if message == 'n':
             board = game_instance.get_initial_board()
-            response = f"New game started. Please make your first move.\n\n{game_instance.get_instruction_board()}\n\n{game_instance.render_board(board)}"
-            send_message(response, sender_id, interface)
+            send_message("New game started. Please make your first move.", sender_id, interface)
+            send_message(game_instance.get_instruction_board(), sender_id, interface)
+            send_message(game_instance.render_board(board), sender_id, interface)
             update_user_state(sender_id, {'command': command_str, 'step': 14, 'board': board})
         elif message.isdigit():
             game_id = int(message)

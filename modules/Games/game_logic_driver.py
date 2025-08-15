@@ -25,6 +25,15 @@ class GameLogicDriver:
         self.interface = interface
         self.game_type = self.game.game_type
 
+    def _send_game_state_message(self, recipient_id, pre_board_text=None, board_str=None, post_board_text=None):
+        """Sends a message, ensuring the board is in its own message."""
+        if pre_board_text:
+            send_message(pre_board_text, recipient_id, self.interface)
+        if board_str:
+            send_message(board_str, recipient_id, self.interface)
+        if post_board_text:
+            send_message(post_board_text, recipient_id, self.interface)
+
     def create_game_with_first_move(self, sender_id, board):
         """Creates a new game in the database after the first move."""
         board_json = json.dumps(board)
@@ -32,8 +41,8 @@ class GameLogicDriver:
         game_id = create_game(self.game_type, str(sender_id), board_json)
 
         board_str = self.game.render_board(board, None, None)
-        response = f"Your game (ID: {game_id}) is now listed and waiting for an opponent.\n\n{board_str}"
-        send_message(response, sender_id, self.interface)
+        pre_board_text = f"Your game (ID: {game_id}) is now listed and waiting for an opponent."
+        self._send_game_state_message(sender_id, pre_board_text=pre_board_text, board_str=board_str)
         return game_id
 
     def show_open_games(self, sender_id):
@@ -72,8 +81,10 @@ class GameLogicDriver:
             board_str = self.game.render_board(board, player_x_sn, player_o_sn)
             instruction_board = self.game.get_instruction_board()
 
-            response_o = f"You joined game {game_id}.\n\n{instruction_board}\n\n{board_str}\nIt's your turn (O). Enter your move, or E[X]IT to pause."
-            send_message(response_o, sender_id, self.interface)
+            pre_board_text = f"You joined game {game_id}.\n\n{instruction_board}"
+            post_board_text = "It's your turn (O). Enter your move, or E[X]IT to pause."
+            self._send_game_state_message(sender_id, pre_board_text=pre_board_text, board_str=board_str,
+                                          post_board_text=post_board_text)
             return game_id
         except ValueError:
             send_message("Invalid game ID. Please enter a number.", sender_id, self.interface)
@@ -140,25 +151,29 @@ class GameLogicDriver:
 
         player_x_sn = get_node_short_name(get_node_id_from_num(int(player_x), self.interface), self.interface)
         player_o_sn = get_node_short_name(get_node_id_from_num(int(player_o), self.interface), self.interface) if player_o else None
+        board_str = self.game.render_board(board, player_x_sn, player_o_sn)
 
         if status == 'finished':
             winner_name = player_x_sn if str(winner) == player_x else (player_o_sn if player_o else "Unknown")
-            response = f"{self.game.render_board(board, player_x_sn, player_o_sn)}\n\nGame over! Winner: {winner_name}\n\nType 'X' to return to the games menu."
-            send_message(response, sender_id, self.interface)
+            post_board_text = f"Game over! Winner: {winner_name}\n\nType 'X' to return to the games menu."
+            self._send_game_state_message(sender_id, board_str=board_str, post_board_text=post_board_text)
             return
 
         # Determine the prompt based on whose turn it is
         if str(sender_id) == current_player:
             player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
-            response = f"{self.game.get_instruction_board()}\n\n{self.game.render_board(board, player_x_sn, player_o_sn)}\n\nIt's your turn ({player_symbol}). Enter your move, or E[X]IT to pause."
+            pre_board_text = self.game.get_instruction_board()
+            post_board_text = f"It's your turn ({player_symbol}). Enter your move, or E[X]IT to pause."
+            self._send_game_state_message(sender_id, pre_board_text=pre_board_text, board_str=board_str,
+                                          post_board_text=post_board_text)
         elif player_o is None and str(sender_id) == player_x:
-            response = f"{self.game.render_board(board, player_x_sn, player_o_sn)}\n\nWaiting for an opponent to join. Or E[X]IT to pause."
+            post_board_text = "Waiting for an opponent to join. Or E[X]IT to pause."
+            self._send_game_state_message(sender_id, board_str=board_str, post_board_text=post_board_text)
         else:
             current_player_sn = player_x_sn if str(current_player) == str(player_x) else player_o_sn
             current_player_symbol = 'X' if str(current_player) == str(player_x) else 'O'
-            response = f"{self.game.render_board(board, player_x_sn, player_o_sn)}\n\nIt's {current_player_sn} ({current_player_symbol})'s turn. E[X]IT to pause."
-
-        send_message(response, sender_id, self.interface)
+            post_board_text = f"It's {current_player_sn} ({current_player_symbol})'s turn. E[X]IT to pause."
+            self._send_game_state_message(sender_id, board_str=board_str, post_board_text=post_board_text)
 
     def _validate_game_state(self, sender_id, game_data, is_redisplay=False):
         """Validates the game data and sends appropriate messages if invalid."""
@@ -183,10 +198,10 @@ class GameLogicDriver:
 
         if winner_symbol == 'draw':
             end_game(game_id, "draw")
-            draw_response = f"{board_str}\n\nIt's a draw!\n\nType 'X' to return to the games menu."
-            send_message(draw_response, int(p_x_id), self.interface)
+            post_board_text = "It's a draw!\n\nType 'X' to return to the games menu."
+            self._send_game_state_message(int(p_x_id), board_str=board_str, post_board_text=post_board_text)
             if p_o_id:
-                send_message(draw_response, int(p_o_id), self.interface)
+                self._send_game_state_message(int(p_o_id), board_str=board_str, post_board_text=post_board_text)
             update_user_state(int(p_x_id), {'command': 'GAMES', 'step': 1})
             if p_o_id:
                 update_user_state(int(p_o_id), {'command': 'GAMES', 'step': 1})
@@ -197,12 +212,12 @@ class GameLogicDriver:
         winner_name = p_x_sn if str(winner_id) == p_x_id else p_o_sn
         loser_id = int(p_o_id) if str(current_player) == p_x_id else int(p_x_id)
 
-        win_response = f"{board_str}\n\nCongratulations! You win!\n\nType 'X' to return to the games menu."
-        lose_response = f"{board_str}\n\nGame over. {winner_name} wins.\n\nType 'X' to return to the games menu."
+        win_post_board_text = "Congratulations! You win!\n\nType 'X' to return to the games menu."
+        lose_post_board_text = f"Game over. {winner_name} wins.\n\nType 'X' to return to the games menu."
 
-        send_message(win_response, int(winner_id), self.interface)
+        self._send_game_state_message(int(winner_id), board_str=board_str, post_board_text=win_post_board_text)
         if loser_id:
-            send_message(lose_response, loser_id, self.interface)
+            self._send_game_state_message(loser_id, board_str=board_str, post_board_text=lose_post_board_text)
 
         update_user_state(int(winner_id), {'command': 'GAMES', 'step': 1})
         if loser_id:
@@ -214,15 +229,17 @@ class GameLogicDriver:
         mover_sn = p_x_sn if str(sender_id) == p_x_id else p_o_sn
 
         # Notify the other player that it's their turn
-        if str(sender_id) == p_x_id and p_o_id is None: # First move before P2 joins
-            pass # P1 is notified when P2 joins
-        elif board.count(mover_symbol) == 1 and str(sender_id) == p_o_id: # First move by O
-             response_x = f"Player {mover_sn} has joined your game!\n{board_str}\nIt is your turn (X)."
-             send_message(response_x, int(p_x_id), self.interface)
+        if str(sender_id) == p_x_id and p_o_id is None:  # First move before P2 joins
+            pass  # P1 is notified when P2 joins
+        elif board.count(mover_symbol) == 1 and str(sender_id) == p_o_id:  # First move by O
+            pre_board_text = f"Player {mover_sn} has joined your game!"
+            post_board_text = "It is your turn (X)."
+            self._send_game_state_message(int(p_x_id), pre_board_text=pre_board_text, board_str=board_str,
+                                          post_board_text=post_board_text)
         elif next_player:
             your_symbol = 'O' if mover_symbol == 'X' else 'X'
-            response_other = f"{board_str}\n\n{mover_sn} ({mover_symbol}) has made a move. It's your turn ({your_symbol})."
-            send_message(response_other, int(next_player), self.interface)
+            post_board_text = f"{mover_sn} ({mover_symbol}) has made a move. It's your turn ({your_symbol})."
+            self._send_game_state_message(int(next_player), board_str=board_str, post_board_text=post_board_text)
 
         # Confirm move to the current player
         waiting_message = "Move made. Waiting for opponent."
@@ -231,5 +248,4 @@ class GameLogicDriver:
             opponent_symbol = 'X' if str(next_player) == p_x_id else 'O'
             waiting_message = f"Move made. Waiting for opponent {opponent_sn} ({opponent_symbol})."
 
-        response_self = f"{board_str}\n\n{waiting_message}"
-        send_message(response_self, sender_id, self.interface)
+        self._send_game_state_message(sender_id, board_str=board_str, post_board_text=waiting_message)
