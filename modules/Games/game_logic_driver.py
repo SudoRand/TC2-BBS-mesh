@@ -54,10 +54,8 @@ class GameLogicDriver:
         # Games waiting for an opponent that were created by the user
         waiting_games = get_waiting_games_for_creator(self.game_type, player_id_str)
         if waiting_games:
-            response = "Your waiting games:\n"
-            for game in waiting_games:
-                game_id, _ = game
-                response += f"ID: {game_id}\n"
+            waiting_game_ids = [f'[{game[0]}]' for game in waiting_games] 
+            response = "Waiting for opponent: " + ",".join(waiting_game_ids) + "\n"
             send_message(response, sender_id, self.interface)
 
         # Show open games that the user can join
@@ -88,8 +86,7 @@ class GameLogicDriver:
                 game_id, player_x_id, _ = game
                 node_id = get_node_id_from_num(int(player_x_id), self.interface)
                 short_name = get_node_short_name(node_id, self.interface)
-                response += f"ID: {game_id}, Started by: {short_name}\n"
-            response += "\nEnter the ID of the game you want to join, or 'X' to exit."
+                response += f"[{game_id}] Started by: {short_name}\n"
             send_message(response, sender_id, self.interface)
 
     def join_game_by_id(self, sender_id, game_id_str):
