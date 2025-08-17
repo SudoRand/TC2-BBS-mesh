@@ -50,44 +50,64 @@ class GameLogicDriver:
     def show_current_games(self, sender_id):
         """Shows lists of games a player can join or continue."""
         player_id_str = str(sender_id)
+        response_parts = []
+
+        # Show games the user can continue
+        all_active_games = get_active_games_for_player(self.game_type, player_id_str)
+        # Assuming get_active_games_for_player returns (game_id, player_x, player_o, status, current_player)
+        continuable_games = [g for g in all_active_games if g[3] == 'in_progress']
+
+        your_turn_games = []
+        opponents_turn_games = []
+
+        for game in continuable_games:
+            current_player = game[4]
+            if str(current_player) == player_id_str:
+                your_turn_games.append(game)
+            else:
+                opponents_turn_games.append(game)
+
+        if your_turn_games:
+            lines = ["Your turn:"]
+            for game_id, player_x, player_o, _, _ in your_turn_games:
+                opponent_id = player_o if player_id_str == str(player_x) else player_x
+                opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
+                opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
+                lines.append(f"[{game_id}] Opponent: {opponent_sn}")
+            response_parts.append("\n".join(lines))
+
+        if opponents_turn_games:
+            lines = ["Opponent's turn:"]
+            for game_id, player_x, player_o, _, _ in opponents_turn_games:
+                opponent_id = player_o if player_id_str == str(player_x) else player_x
+                opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
+                opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
+                lines.append(f"[{game_id}] Opponent: {opponent_sn}")
+            response_parts.append("\n".join(lines))
 
         # Games waiting for an opponent that were created by the user
         waiting_games = get_waiting_games_for_creator(self.game_type, player_id_str)
         if waiting_games:
-            waiting_game_ids = [f'[{game[0]}]' for game in waiting_games] 
-            response = "Waiting for opponent: " + ",".join(waiting_game_ids) + "\n"
-            send_message(response, sender_id, self.interface)
+            waiting_game_ids = [f'[{game[0]}]' for game in waiting_games]
+            response_parts.append("Waiting for opponent:\n" + "\n".join(waiting_game_ids))
 
         # Show open games that the user can join
         open_games = get_open_games(self.game_type)
         joinable_games = [game for game in open_games if str(game[1]) != player_id_str]
-
-        # Show games the user can continue
-        all_active_games = get_active_games_for_player(self.game_type, player_id_str)
-        continuable_games = [g for g in all_active_games if g[3] == 'in_progress']
-
-        if not waiting_games and not joinable_games and not continuable_games:
-            response = "No open games available. Why not start one?"
-            send_message(response, sender_id, self.interface)
-            return
-
-        if continuable_games:
-            response = "Continue your game (enter ID):\n"
-            for game_id, player_x, player_o, status in continuable_games:
-                opponent_id = player_o if player_id_str == player_x else player_x
-                opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
-                opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
-                response += f"ID: {game_id}, Opponent: {opponent_sn}\n"
-            send_message(response, sender_id, self.interface)
-
         if joinable_games:
-            response = "Join open game (enter ID):\n"
-            for game in joinable_games:
-                game_id, player_x_id, _ = game
-                node_id = get_node_id_from_num(int(player_x_id), self.interface)
-                short_name = get_node_short_name(node_id, self.interface)
-                response += f"[{game_id}] Started by: {short_name}\n"
-            send_message(response, sender_id, self.interface)
+            lines = ["Join game:"]
+        for game in joinable_games:
+            game_id, player_x_id, _ = game
+            node_id = get_node_id_from_num(int(player_x_id), self.interface)
+            short_name = get_node_short_name(node_id, self.interface)
+            lines.append(f"[{game_id}] Opponent: {short_name}")
+        response_parts.append("\n".join(lines))
+
+        if not response_parts:
+            response_parts.append("No open games available. Why not start one?")
+
+        response = "\n\n".join(response_parts)
+        send_message(response, sender_id, self.interface)
 
     def join_game_by_id(self, sender_id, game_id_str):
         """Handles the logic for a player to join a game by its ID."""
