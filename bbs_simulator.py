@@ -3,6 +3,7 @@ import argparse
 import re
 class SimulatorInterface:
     def __init__(self):
+        self.send_delay = 0
         node_id='!f1d5a925'
         self.myInfo = type('MyInfo', (), {'my_node_num': int(node_id.replace('!', '0x'), 16)})()
         self.nodes = {

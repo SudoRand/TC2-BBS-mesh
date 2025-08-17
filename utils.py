@@ -30,7 +30,7 @@ def send_message(message, destination, interface):
             logging.info(f"REPLY SEND ERROR {str(e)}")
 
         
-        time.sleep(2)
+        time.sleep(getattr(interface, 'send_delay', 2))
 
 
 def get_node_info(interface, short_name):
