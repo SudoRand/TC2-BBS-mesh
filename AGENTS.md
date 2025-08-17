@@ -1,5 +1,9 @@
 # Tips for AI coding agents:
 
+## Meshtastic message display
+
+When choosing messages to be sent, be aware that they are sent via LoRa, which is a very low bandwidth medium. Prioritize shorter display strings when possible (but try not to impact clarity).
+
 ## Checking the second to last message of output
 
 It is tempting to try to perform unit testing assertions on the last message of output to verify the final outcome of a test sequence. But once an operation is complete, the BBS typically outputs the main menu for the user to chose their next action. Thus, it's the *second to last* message in the output that is typically the most important for tests, so don't forget to check that instead of the last.
