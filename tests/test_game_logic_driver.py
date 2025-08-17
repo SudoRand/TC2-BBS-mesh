@@ -148,9 +148,23 @@ class TestGameLogicDriver(unittest.TestCase):
 
         # Check message to P1 about joinable games
         p3_message = self.mock_send_message.call_args_list[1][0][0]
-        self.assertIn("Open games to join:", p3_message)
+        self.assertIn("Join open game (enter ID):", p3_message)
         self.assertIn("ID: 2", p3_message)
         self.assertIn("Started by: P3", p3_message)
+
+    def test_show_open_games_with_continuable(self):
+        # P1 and P2 are in a game
+        game_id = create_game('mock_game', str(self.p1_num), json.dumps([" " , " ", " ", " "]))
+        join_game(game_id, str(self.p2_num))
+
+        with patch('modules.Games.game_logic_driver.get_node_short_name', return_value='P2'):
+            self.driver.show_open_games(self.p1_num)
+
+        self.assertEqual(self.mock_send_message.call_count, 1)
+        continuable_message = self.mock_send_message.call_args_list[0][0][0]
+        self.assertIn("Continue your game (enter ID):", continuable_message)
+        self.assertIn(f"ID: {game_id}, Opponent: P2", continuable_message)
+
 
 if __name__ == '__main__':
     unittest.main()

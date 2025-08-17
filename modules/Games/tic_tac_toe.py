@@ -79,25 +79,9 @@ def handle_tic_tac_toe_command(sender_id, interface):
     """
     game_instance = TicTacToeGame()
     driver = GameLogicDriver(game_instance, interface)
-
-    # Show open/waiting games first
     driver.show_open_games(sender_id)
 
-    # Then, show continuable games, as this is not handled by the driver
-    player_id_str = str(sender_id)
-    all_active_games = get_active_games_for_player(game_instance.game_type, player_id_str)
-    continuable_games = [g for g in all_active_games if g[3] == 'in_progress']
-
-    menu = ""
-    if continuable_games:
-        menu += "\nContinue your game by entering its ID:\n"
-        for game_id, player_x, player_o, status in continuable_games:
-            opponent_id = player_o if player_id_str == player_x else player_x
-            opponent_node_id = get_node_id_from_num(int(opponent_id), interface)
-            opponent_sn = get_node_short_name(opponent_node_id, interface) if opponent_node_id else "Unknown"
-            menu += f"ID: {game_id}, Opponent: {opponent_sn}\n"
-
-    menu += "\nOr [N]EW to create a new one.\n"
+    menu = "\n[N]EW to create a new one.\n"
     menu += "E[X]IT to return to the main menu."
 
     send_message(menu, sender_id, interface)

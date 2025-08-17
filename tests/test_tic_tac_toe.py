@@ -143,8 +143,9 @@ class TestTicTacToe(unittest.TestCase):
             # 1. Player goes to the tic-tac-toe menu
             handle_tic_tac_toe_command(p1_num, mock_interface)
             self.assertEqual(mock_driver_send.call_count, 1)
+            self.assertIn(f"ID: {game_id}, Opponent: {p2_sn}", mock_driver_send.call_args[0][0])
             self.assertEqual(mock_ttt_send.call_count, 1)
-            self.assertIn(f"ID: {game_id}, Opponent: {p2_sn}", mock_ttt_send.call_args[0][0])
+
 
             # 2. Player chooses to continue a game, which calls the driver
             state_p1 = get_user_state(p1_num)
@@ -166,6 +167,7 @@ class TestTicTacToe(unittest.TestCase):
 
         self.assertEqual(mock_driver_send.call_count, 1)
         self.assertIn(f"Started by: {p1_sn}", mock_driver_send.call_args[0][0])
+        self.assertEqual(mock_ttt_send.call_count, 1)
 
     @unittest.expectedFailure
     @patch('modules.Games.tic_tac_toe.send_message')

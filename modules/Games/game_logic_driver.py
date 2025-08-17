@@ -3,6 +3,7 @@ from db_operations import (
     create_game,
     get_open_games,
     get_waiting_games_for_creator,
+    get_active_games_for_player,
     join_game,
     get_game_by_id,
     update_game_board,
@@ -47,9 +48,11 @@ class GameLogicDriver:
         return game_id
 
     def show_open_games(self, sender_id):
-        """Shows a list of open games a player can join."""
+        """Shows lists of games a player can join or continue."""
+        player_id_str = str(sender_id)
+
         # Games waiting for an opponent that were created by the user
-        waiting_games = get_waiting_games_for_creator(self.game_type, str(sender_id))
+        waiting_games = get_waiting_games_for_creator(self.game_type, player_id_str)
         if waiting_games:
             response = "Your waiting games:\n"
             for game in waiting_games:
@@ -59,15 +62,28 @@ class GameLogicDriver:
 
         # Show open games that the user can join
         open_games = get_open_games(self.game_type)
-        joinable_games = [game for game in open_games if str(game[1]) != str(sender_id)]
+        joinable_games = [game for game in open_games if str(game[1]) != player_id_str]
 
-        if not waiting_games and not joinable_games:
+        # Show games the user can continue
+        all_active_games = get_active_games_for_player(self.game_type, player_id_str)
+        continuable_games = [g for g in all_active_games if g[3] == 'in_progress']
+
+        if not waiting_games and not joinable_games and not continuable_games:
             response = "No open games available. Why not start one?"
             send_message(response, sender_id, self.interface)
             return
 
+        if continuable_games:
+            response = "Continue your game (enter ID):\n"
+            for game_id, player_x, player_o, status in continuable_games:
+                opponent_id = player_o if player_id_str == player_x else player_x
+                opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
+                opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
+                response += f"ID: {game_id}, Opponent: {opponent_sn}\n"
+            send_message(response, sender_id, self.interface)
+
         if joinable_games:
-            response = "Open games to join:\n"
+            response = "Join open game (enter ID):\n"
             for game in joinable_games:
                 game_id, player_x_id, _ = game
                 node_id = get_node_id_from_num(int(player_x_id), self.interface)
