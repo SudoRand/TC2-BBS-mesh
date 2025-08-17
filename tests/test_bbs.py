@@ -513,8 +513,8 @@ class TestBBS(unittest.TestCase):
                     bbs_simulator.main()
 
                     # Check prompts
-                    self.assertEqual(mock_input.call_args_list[0].args[0], 'Simulator Node (SIM): ')
-                    self.assertEqual(mock_input.call_args_list[1].args[0], 'Second Node (SIM2): ')
+                    self.assertEqual(mock_input.call_args_list[0].args[0], 'SIM: ')
+                    self.assertEqual(mock_input.call_args_list[1].args[0], 'SIM2: ')
 
                     # Check that the second message was processed by the new sticky sender
                     self.assertEqual(mock_process_message.call_count, 2)

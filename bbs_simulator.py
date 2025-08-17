@@ -64,9 +64,8 @@ def main():
                     last_sender_node_info = node_info
                     break
 
-            long_name = last_sender_node_info['user']['longName']
             short_name = last_sender_node_info['user']['shortName']
-            prompt_str = f"{long_name} ({short_name}): "
+            prompt_str = f"{short_name}: "
             message = input(prompt_str)
 
             # Use regex to match "short_name: message" format
