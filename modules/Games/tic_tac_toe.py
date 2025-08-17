@@ -78,23 +78,17 @@ def handle_tic_tac_toe_command(sender_id, interface):
     Displays open games to join and active games to continue.
     """
     game_instance = TicTacToeGame()
-    player_id_str = str(sender_id)
+    driver = GameLogicDriver(game_instance, interface)
 
-    joinable_games = [g for g in get_open_games(game_instance.game_type) if g[1] != player_id_str]
+    # Show open/waiting games first
+    driver.show_open_games(sender_id)
+
+    # Then, show continuable games, as this is not handled by the driver
+    player_id_str = str(sender_id)
     all_active_games = get_active_games_for_player(game_instance.game_type, player_id_str)
     continuable_games = [g for g in all_active_games if g[3] == 'in_progress']
 
-    menu = f"Welcome to {menu_name}!\n"
-
-    if joinable_games:
-        menu += "\nJoin an open game by entering its ID:\n"
-        for game_id, player_x_id, _ in joinable_games:
-            node_id = get_node_id_from_num(int(player_x_id), interface)
-            short_name = get_node_short_name(node_id, interface) if node_id else f"Unknown ({player_x_id})"
-            menu += f"ID: {game_id}, Started by: {short_name}\n"
-    else:
-        menu += "\nNo open games to join.\n"
-
+    menu = ""
     if continuable_games:
         menu += "\nContinue your game by entering its ID:\n"
         for game_id, player_x, player_o, status in continuable_games:

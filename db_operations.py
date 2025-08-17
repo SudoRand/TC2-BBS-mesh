@@ -200,6 +200,15 @@ def get_open_games(game_type):
     c.execute("SELECT id, player_x, unique_id FROM turn_based_games WHERE status = 'waiting' AND game_type = ?", (game_type,))
     return c.fetchall()
 
+def get_waiting_games_for_creator(game_type, player_id):
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, unique_id FROM turn_based_games
+        WHERE status = 'waiting' AND game_type = ? AND player_x = ?
+    """, (game_type, player_id))
+    return c.fetchall()
+
 def get_active_games_for_player(game_type, player_id):
     conn = get_db_connection()
     c = conn.cursor()

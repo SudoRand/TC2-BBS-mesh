@@ -126,5 +126,31 @@ class TestGameLogicDriver(unittest.TestCase):
         db_game = get_game_by_id(game_id)
         self.assertEqual(db_game[5], str(self.p1_num))
 
+    def test_show_open_games(self):
+        # P1 creates a game
+        create_game('mock_game', str(self.p1_num), json.dumps([" ", " ", " ", " "]))
+        # Another player (P3) creates a game
+        p3_num = 333
+        create_game('mock_game', str(p3_num), json.dumps([" ", " ", " ", " "]))
+
+        with patch('modules.Games.game_logic_driver.get_node_short_name', return_value='P3'):
+            self.driver.show_open_games(self.p1_num)
+
+        # Expected:
+        # 1. A message listing P1's waiting game
+        # 2. A message listing P3's game as joinable
+        self.assertEqual(self.mock_send_message.call_count, 2)
+
+        # Check message to P1 about their own game
+        p1_message = self.mock_send_message.call_args_list[0][0][0]
+        self.assertIn("Your waiting games:", p1_message)
+        self.assertIn("ID: 1", p1_message)
+
+        # Check message to P1 about joinable games
+        p3_message = self.mock_send_message.call_args_list[1][0][0]
+        self.assertIn("Open games to join:", p3_message)
+        self.assertIn("ID: 2", p3_message)
+        self.assertIn("Started by: P3", p3_message)
+
 if __name__ == '__main__':
     unittest.main()

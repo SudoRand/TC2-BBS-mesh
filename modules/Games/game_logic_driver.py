@@ -2,6 +2,7 @@ import json
 from db_operations import (
     create_game,
     get_open_games,
+    get_waiting_games_for_creator,
     join_game,
     get_game_by_id,
     update_game_board,
@@ -47,20 +48,33 @@ class GameLogicDriver:
 
     def show_open_games(self, sender_id):
         """Shows a list of open games a player can join."""
-        games = get_open_games(self.game_type)
-        if not games:
-            response = "No open games available to join. Why not start one?"
+        # Games waiting for an opponent that were created by the user
+        waiting_games = get_waiting_games_for_creator(self.game_type, str(sender_id))
+        if waiting_games:
+            response = "Your waiting games:\n"
+            for game in waiting_games:
+                game_id, _ = game
+                response += f"ID: {game_id}\n"
+            send_message(response, sender_id, self.interface)
+
+        # Show open games that the user can join
+        open_games = get_open_games(self.game_type)
+        joinable_games = [game for game in open_games if str(game[1]) != str(sender_id)]
+
+        if not waiting_games and not joinable_games:
+            response = "No open games available. Why not start one?"
             send_message(response, sender_id, self.interface)
             return
 
-        response = "Open games:\n"
-        for game in games:
-            game_id, player_x_id, _ = game
-            node_id = get_node_id_from_num(int(player_x_id), self.interface)
-            short_name = get_node_short_name(node_id, self.interface)
-            response += f"ID: {game_id}, Started by: {short_name}\n"
-        response += "\nEnter the ID of the game you want to join, or 'X' to exit."
-        send_message(response, sender_id, self.interface)
+        if joinable_games:
+            response = "Open games to join:\n"
+            for game in joinable_games:
+                game_id, player_x_id, _ = game
+                node_id = get_node_id_from_num(int(player_x_id), self.interface)
+                short_name = get_node_short_name(node_id, self.interface)
+                response += f"ID: {game_id}, Started by: {short_name}\n"
+            response += "\nEnter the ID of the game you want to join, or 'X' to exit."
+            send_message(response, sender_id, self.interface)
 
     def join_game_by_id(self, sender_id, game_id_str):
         """Handles the logic for a player to join a game by its ID."""
