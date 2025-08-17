@@ -213,7 +213,7 @@ def get_active_games_for_player(game_type, player_id):
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("""
-        SELECT id, player_x, player_o, status
+        SELECT id, player_x, player_o, status, current_player
         FROM turn_based_games
         WHERE game_type = ? AND (player_x = ? OR player_o = ?) AND status IN ('waiting', 'in_progress')
     """, (game_type, player_id, player_id))

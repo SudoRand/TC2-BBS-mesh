@@ -96,12 +96,12 @@ class GameLogicDriver:
         joinable_games = [game for game in open_games if str(game[1]) != player_id_str]
         if joinable_games:
             lines = ["Join game:"]
-        for game in joinable_games:
-            game_id, player_x_id, _ = game
-            node_id = get_node_id_from_num(int(player_x_id), self.interface)
-            short_name = get_node_short_name(node_id, self.interface)
-            lines.append(f"[{game_id}] Opponent: {short_name}")
-        response_parts.append("\n".join(lines))
+            for game in joinable_games:
+                game_id, player_x_id, _ = game
+                node_id = get_node_id_from_num(int(player_x_id), self.interface)
+                short_name = get_node_short_name(node_id, self.interface)
+                lines.append(f"[{game_id}] Opponent: {short_name}")
+            response_parts.append("\n".join(lines))
 
         if not response_parts:
             response_parts.append("No open games available. Why not start one?")
@@ -119,7 +119,7 @@ class GameLogicDriver:
                 send_message("Game not found after joining.", sender_id, self.interface)
                 return None
 
-            _, _, player_x_id, player_o_id, board_json, _, _, _, _ = game_data
+            _, _, player_x_id, player_o_id, board_json, _, _, status, _, _ = game_data
             board = json.loads(board_json)
 
             player_x_sn = get_node_short_name(get_node_id_from_num(int(player_x_id), self.interface), self.interface)

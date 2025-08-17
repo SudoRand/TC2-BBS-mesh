@@ -81,18 +81,20 @@ class TestGameLogicDriver(unittest.TestCase):
         # 4. Check that the second message is the board
         self.assertIn("Board: X   ", self.mock_send_message.call_args_list[1][0][0])
 
-    @unittest.expectedFailure
     def test_join_game_by_id(self):
         game_id = create_game('mock_game', str(self.p1_num), json.dumps(["X", " ", " ", " "]))
-        with patch('builtins.int', side_effect=[game_id, self.p1_num, self.p2_num]):
-            with patch('modules.Games.game_logic_driver.get_node_short_name', side_effect=['P1', 'P2']):
-                self.driver.join_game_by_id(self.p2_num, str(game_id))
+        with patch('modules.Games.game_logic_driver.get_node_short_name', side_effect=['P1', 'P2']):
+            returned_game_id = self.driver.join_game_by_id(self.p2_num, str(game_id))
 
+        self.assertEqual(returned_game_id, game_id)
         db_game = get_game_by_id(game_id)
         self.assertEqual(db_game[3], str(self.p2_num))
         self.assertEqual(db_game[5], str(self.p2_num))
+
+        # Check that P2 (the joining player) gets all the info
         self.assertEqual(self.mock_send_message.call_count, 3)
-        self.assertIn("You joined game", self.mock_send_message.call_args_list[0][0][0])
+        self.assertIn(f"You joined game {game_id}", self.mock_send_message.call_args_list[0][0][0])
+        self.assertIn("Mock Instructions", self.mock_send_message.call_args_list[0][0][0])
         self.assertIn("Board: X   ", self.mock_send_message.call_args_list[1][0][0])
         self.assertIn("It's your turn (O)", self.mock_send_message.call_args_list[2][0][0])
 
@@ -137,20 +139,14 @@ class TestGameLogicDriver(unittest.TestCase):
             self.driver.show_current_games(self.p1_num)
 
         # Expected:
-        # 1. A message listing P1's waiting game
-        # 2. A message listing P3's game as joinable
-        self.assertEqual(self.mock_send_message.call_count, 2)
+        self.assertEqual(self.mock_send_message.call_count, 1)
+        full_message = self.mock_send_message.call_args_list[0][0][0]
 
-        # Check message to P1 about their own game
-        p1_message = self.mock_send_message.call_args_list[0][0][0]
-        self.assertIn("Your waiting games:", p1_message)
-        self.assertIn("ID: 1", p1_message)
+        # Check for P1's waiting game
+        self.assertIn("Waiting for opponent:\n[1]", full_message)
 
-        # Check message to P1 about joinable games
-        p3_message = self.mock_send_message.call_args_list[1][0][0]
-        self.assertIn("Join open game (enter ID):", p3_message)
-        self.assertIn("ID: 2", p3_message)
-        self.assertIn("Started by: P3", p3_message)
+        # Check for P3's joinable game
+        self.assertIn("Join game:\n[2] Opponent: P3", full_message)
 
     def test_show_current_games_with_continuable(self):
         # P1 and P2 are in a game
@@ -162,8 +158,8 @@ class TestGameLogicDriver(unittest.TestCase):
 
         self.assertEqual(self.mock_send_message.call_count, 1)
         continuable_message = self.mock_send_message.call_args_list[0][0][0]
-        self.assertIn("Continue your game (enter ID):", continuable_message)
-        self.assertIn(f"ID: {game_id}, Opponent: P2", continuable_message)
+        self.assertIn("Opponent's turn:", continuable_message)
+        self.assertIn(f"[{game_id}] Opponent: P2", continuable_message)
 
 
 if __name__ == '__main__':
