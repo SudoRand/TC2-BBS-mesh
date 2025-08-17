@@ -40,7 +40,7 @@ class ConnectFourGame(GameInterface):
                 return PLAYER_O_CHAR
             return EMPTY_CHAR
 
-        board_str = " 1  2  3  4  5  6  7 \n"
+        board_str = ""
         for r in range(ROWS - 1, -1, -1):
             board_str += " ".join([get_char(cell) for cell in board[r]]) + "\n"
 
@@ -112,27 +112,25 @@ def handle_connect_four_command(sender_id, interface):
     all_active_games = get_active_games_for_player(game_instance.game_type, player_id_str)
     continuable_games = [g for g in all_active_games if g[3] == 'in_progress']
 
-    menu = f"Welcome to {menu_name}!\n"
-
-    if joinable_games:
-        menu += "\nJoin an open game by entering its ID:\n"
-        for game_id, player_x_id, _ in joinable_games:
-            node_id = get_node_id_from_num(int(player_x_id), interface)
-            short_name = get_node_short_name(node_id, interface) if node_id else f"Unknown ({player_x_id})"
-            menu += f"ID: {game_id}, Started by: {short_name}\n"
-    else:
-        menu += "\nNo open games to join.\n"
+    menu = f"{menu_name}!\n"
 
     if continuable_games:
-        menu += "\nContinue your game by entering its ID:\n"
+        menu += "\nContinue game (enter ID):\n"
         for game_id, player_x, player_o, status in continuable_games:
             opponent_id = player_o if player_id_str == player_x else player_x
             opponent_node_id = get_node_id_from_num(int(opponent_id), interface)
             opponent_sn = get_node_short_name(opponent_node_id, interface) if opponent_node_id else "Unknown"
             menu += f"ID: {game_id}, Opponent: {opponent_sn}\n"
 
-    menu += "\nOr [N]EW to create a new one.\n"
-    menu += "E[X]IT to return to the main menu."
+    if joinable_games:
+        menu += "\nJoin open game (enter ID):\n"
+        for game_id, player_x_id, _ in joinable_games:
+            node_id = get_node_id_from_num(int(player_x_id), interface)
+            short_name = get_node_short_name(node_id, interface) if node_id else f"Unknown ({player_x_id})"
+            menu += f"ID: {game_id}, Started by: {short_name}\n"
+
+    menu += "\[N]EW game.\n"
+    menu += "E[X]IT."
 
     send_message(menu, sender_id, interface)
     update_user_state(sender_id, {'command': command_str, 'step': 1})
