@@ -63,6 +63,7 @@ class TestGameLogicDriver(unittest.TestCase):
         self.send_message_patcher.stop()
         self.update_user_state_patcher.stop()
         self.get_node_id_patcher.stop()
+        self.mock_db.return_value.close()
         os.chdir(self.original_cwd)
         shutil.rmtree(self.test_dir)
 
