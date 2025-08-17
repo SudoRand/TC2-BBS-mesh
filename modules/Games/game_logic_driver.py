@@ -47,7 +47,7 @@ class GameLogicDriver:
         self._send_game_state_message(sender_id, pre_board_text=pre_board_text, board_str=board_str)
         return game_id
 
-    def show_open_games(self, sender_id):
+    def show_current_games(self, sender_id):
         """Shows lists of games a player can join or continue."""
         player_id_str = str(sender_id)
 

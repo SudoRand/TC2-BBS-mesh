@@ -107,7 +107,7 @@ def handle_connect_four_command(sender_id, interface):
     """
     game_instance = ConnectFourGame()
     driver = GameLogicDriver(game_instance, interface)
-    driver.show_open_games(sender_id)
+    driver.show_current_games(sender_id)
 
     menu = "\n[N]EW game.\n"
     menu += "E[X]IT."

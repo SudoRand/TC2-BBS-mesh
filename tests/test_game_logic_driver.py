@@ -126,7 +126,7 @@ class TestGameLogicDriver(unittest.TestCase):
         db_game = get_game_by_id(game_id)
         self.assertEqual(db_game[5], str(self.p1_num))
 
-    def test_show_open_games(self):
+    def test_show_current_games(self):
         # P1 creates a game
         create_game('mock_game', str(self.p1_num), json.dumps([" ", " ", " ", " "]))
         # Another player (P3) creates a game
@@ -134,7 +134,7 @@ class TestGameLogicDriver(unittest.TestCase):
         create_game('mock_game', str(p3_num), json.dumps([" ", " ", " ", " "]))
 
         with patch('modules.Games.game_logic_driver.get_node_short_name', return_value='P3'):
-            self.driver.show_open_games(self.p1_num)
+            self.driver.show_current_games(self.p1_num)
 
         # Expected:
         # 1. A message listing P1's waiting game
@@ -152,13 +152,13 @@ class TestGameLogicDriver(unittest.TestCase):
         self.assertIn("ID: 2", p3_message)
         self.assertIn("Started by: P3", p3_message)
 
-    def test_show_open_games_with_continuable(self):
+    def test_show_current_games_with_continuable(self):
         # P1 and P2 are in a game
         game_id = create_game('mock_game', str(self.p1_num), json.dumps([" " , " ", " ", " "]))
         join_game(game_id, str(self.p2_num))
 
         with patch('modules.Games.game_logic_driver.get_node_short_name', return_value='P2'):
-            self.driver.show_open_games(self.p1_num)
+            self.driver.show_current_games(self.p1_num)
 
         self.assertEqual(self.mock_send_message.call_count, 1)
         continuable_message = self.mock_send_message.call_args_list[0][0][0]

@@ -79,7 +79,7 @@ def handle_tic_tac_toe_command(sender_id, interface):
     """
     game_instance = TicTacToeGame()
     driver = GameLogicDriver(game_instance, interface)
-    driver.show_open_games(sender_id)
+    driver.show_current_games(sender_id)
 
     menu = "\n[N]EW to create a new one.\n"
     menu += "E[X]IT to return to the main menu."

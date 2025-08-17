@@ -155,7 +155,7 @@ class TestTicTacToe(unittest.TestCase):
 
     @patch('modules.Games.game_logic_driver.send_message')
     @patch('modules.Games.tic_tac_toe.send_message')
-    def test_list_open_games_displays_short_name(self, mock_ttt_send, mock_driver_send):
+    def test_list_current_games_displays_short_name(self, mock_ttt_send, mock_driver_send):
         mock_interface = MagicMock()
         p1_num = 12345; p1_id = '!p1'; p1_sn = 'P1'
         mock_interface.nodes = { p1_id: {'num': p1_num, 'user': {'shortName': p1_sn}} }
