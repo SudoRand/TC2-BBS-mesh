@@ -97,9 +97,6 @@ class ConnectFourGame(GameInterface):
 
         return None
 
-    def get_computer_move(self, board):
-        raise NotImplementedError("This game does not support a computer opponent.")
-
 def handle_connect_four_command(sender_id, interface):
     """
     Main entry point for the Connect 4 game.

@@ -81,19 +81,3 @@ class GameInterface(ABC):
                  or None if the game is still in progress.
         """
         pass
-
-    def get_computer_move(self, board):
-        """
-        Determines the computer's move for single-player games.
-        The default implementation indicates that a computer opponent is not supported.
-
-        Args:
-            board: The current state of the board.
-
-        Returns:
-            A valid move for the computer.
-
-        Raises:
-            NotImplementedError: If the game does not support a computer opponent.
-        """
-        raise NotImplementedError("This game does not support a computer opponent.")

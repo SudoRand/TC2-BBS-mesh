@@ -69,9 +69,6 @@ class TicTacToeGame(GameInterface):
 
         return None
 
-    def get_computer_move(self, board):
-        raise NotImplementedError("This game does not support a computer opponent.")
-
 def handle_tic_tac_toe_command(sender_id, interface):
     """
     Main entry point for the Tic Tac Toe game.
