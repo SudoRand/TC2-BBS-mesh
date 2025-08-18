@@ -7,7 +7,7 @@ from db_operations import (
     join_game,
     get_game_by_id,
     update_game_board,
-    end_game,
+    end_game, get_player_stats,
 )
 from utils import send_message, get_node_short_name, get_node_id_from_num, update_user_state
 from .game_interface import GameInterface
@@ -108,10 +108,71 @@ class GameLogicDriver:
 
         response = "\n\n".join(response_parts)
         menu = "\n[N]EW game.\n"
+        menu += "[S]TATS.\n"
         menu += "E[X]IT."
         response += "\n" + menu
         send_message(response, sender_id, self.interface)
         update_user_state(sender_id, {'command': command_str, 'step': 1})
+
+    def show_stats_menu(self, sender_id, command_str):
+        """Displays the stats menu and updates the user's state."""
+        menu = "[M]Y STATS.\n"
+        menu += "E[X]IT to game menu."
+        send_message(menu, sender_id, self.interface)
+        update_user_state(sender_id, {'command': command_str, 'step': 2})
+
+    def show_player_stats(self, sender_id):
+        """Calculates and displays the player's game stats."""
+        player_id_str = str(sender_id)
+        stats = get_player_stats(self.game_type, player_id_str)
+
+        if not stats:
+            send_message("No game history found.", sender_id, self.interface)
+            return
+
+        wins = losses = draws = 0
+        opponent_stats = {}
+
+        for player_x, player_o, winner in stats:
+            if winner == player_id_str:
+                wins += 1
+            elif winner == 'draw':
+                draws += 1
+            else:
+                losses += 1
+
+            opponent_id = None
+            if player_x == player_id_str:
+                opponent_id = player_o
+            else:
+                opponent_id = player_x
+
+            if opponent_id:
+                if opponent_id not in opponent_stats:
+                    opponent_stats[opponent_id] = {'w': 0, 'l': 0, 'd': 0}
+
+                if winner == player_id_str:
+                    opponent_stats[opponent_id]['w'] += 1
+                elif winner == 'draw':
+                    opponent_stats[opponent_id]['d'] += 1
+                else:
+                    opponent_stats[opponent_id]['l'] += 1
+
+        # Get the short name of the player
+        player_node_id = get_node_id_from_num(int(player_id_str), self.interface)
+        player_sn = get_node_short_name(player_node_id, self.interface)
+
+        response = f"STATS for {player_sn}\n"
+        response += f"Overall: {wins}W - {losses}L - {draws}D\n\n"
+
+        if opponent_stats:
+            response += "Vs:\n"
+            for opponent_id, s in opponent_stats.items():
+                opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
+                opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
+                response += f"{opponent_sn}: {s['w']}W - {s['l']}L - {s['d']}D\n"
+
+        send_message(response, sender_id, self.interface)
 
     def join_game_by_id(self, sender_id, game_id_str):
         """Handles the logic for a player to join a game by its ID."""
@@ -280,9 +341,15 @@ class GameLogicDriver:
         mover_sn = p_x_sn if str(sender_id) == p_x_id else p_o_sn
 
         # Notify the other player that it's their turn
+        is_flat_board = not(isinstance(board[0], list))
+        if is_flat_board:
+            symbol_count = board.count(mover_symbol)
+        else:
+            symbol_count = sum(row.count(mover_symbol) for row in board)
+
         if str(sender_id) == p_x_id and p_o_id is None:  # First move before P2 joins
             pass  # P1 is notified when P2 joins
-        elif board.count(mover_symbol) == 1 and str(sender_id) == p_o_id:  # First move by O
+        elif symbol_count == 1 and str(sender_id) == str(p_o_id):  # First move by O
             pre_board_text = f"Player {mover_sn} has joined your game!"
             post_board_text = "It is your turn (X)."
             self._send_game_state_message(int(p_x_id), pre_board_text=pre_board_text, board_str=board_str,

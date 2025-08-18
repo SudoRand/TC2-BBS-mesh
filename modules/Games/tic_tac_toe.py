@@ -101,6 +101,8 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
             send_message(game_instance.get_instruction_board(), sender_id, interface)
             send_message(game_instance.render_board(board), sender_id, interface)
             update_user_state(sender_id, {'command': command_str, 'step': 14, 'board': board})
+        elif message == 's':
+            driver.show_stats_menu(sender_id, command_str)
         elif message.isdigit():
             game_id = int(message)
             player_id_str = str(sender_id)
@@ -120,6 +122,14 @@ def handle_tic_tac_toe_steps(sender_id, message, step, state, interface):
                     update_user_state(sender_id, {'command': command_str, 'step': 12, 'game_id': joined_id, 'active_game_id': joined_id})
             else:
                 send_message("Invalid game ID.", sender_id, interface)
+        else:
+            send_message("Invalid choice. Please try again.", sender_id, interface)
+
+    elif step == 2: # Stats menu
+        if message == 'm':
+            driver.show_player_stats(sender_id)
+        elif message == 'x':
+            driver.show_games_and_menu(sender_id, command_str)
         else:
             send_message("Invalid choice. Please try again.", sender_id, interface)
 

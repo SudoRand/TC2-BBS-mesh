@@ -260,3 +260,23 @@ def end_game(game_id, winner):
     c = conn.cursor()
     c.execute("UPDATE turn_based_games SET winner = ?, status = 'finished' WHERE id = ?", (winner, game_id))
     conn.commit()
+
+def get_player_stats(game_type, player_id):
+    """
+    Retrieves game statistics for a given player and game type.
+
+    Args:
+        game_type (str): The type of the game (e.g., 'tic_tac_toe').
+        player_id (str): The ID of the player.
+
+    Returns:
+        list: A list of tuples, where each tuple contains (player_x, player_o, winner).
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT player_x, player_o, winner
+        FROM turn_based_games
+        WHERE game_type = ? AND (player_x = ? OR player_o = ?) AND status = 'finished'
+    """, (game_type, player_id, player_id))
+    return c.fetchall()
