@@ -73,7 +73,7 @@ class GameLogicDriver:
                 opponent_id = player_o if player_id_str == str(player_x) else player_x
                 opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
                 opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
-                lines.append(f"[{game_id}] Opponent: {opponent_sn}")
+                lines.append(f"[{game_id}] vs {opponent_sn}")
             response_parts.append("\n".join(lines))
 
         if opponents_turn_games:
@@ -82,14 +82,14 @@ class GameLogicDriver:
                 opponent_id = player_o if player_id_str == str(player_x) else player_x
                 opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
                 opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
-                lines.append(f"[{game_id}] Opponent: {opponent_sn}")
+                lines.append(f"[{game_id}] vs {opponent_sn}")
             response_parts.append("\n".join(lines))
 
         # Games waiting for an opponent that were created by the user
         waiting_games = get_waiting_games_for_creator(self.game_type, player_id_str)
         if waiting_games:
-            waiting_game_ids = [f'[{game[0]}]' for game in waiting_games]
-            response_parts.append("Waiting for opponent:\n" + "\n".join(waiting_game_ids))
+            waiting_game_lines = [f'[{game[0]}] vs ?' for game in waiting_games]
+            response_parts.append("Waiting for an opponent:\n" + "\n".join(waiting_game_lines))
 
         # Show open games that the user can join
         open_games = get_open_games(self.game_type)
@@ -100,7 +100,7 @@ class GameLogicDriver:
                 game_id, player_x_id, _ = game
                 node_id = get_node_id_from_num(int(player_x_id), self.interface)
                 short_name = get_node_short_name(node_id, self.interface)
-                lines.append(f"[{game_id}] Opponent: {short_name}")
+                lines.append(f"[{game_id}] vs {short_name}")
             response_parts.append("\n".join(lines))
 
         if not response_parts:

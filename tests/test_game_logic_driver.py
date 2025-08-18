@@ -143,10 +143,10 @@ class TestGameLogicDriver(unittest.TestCase):
         full_message = self.mock_send_message.call_args_list[0][0][0]
 
         # Check for P1's waiting game
-        self.assertIn("Waiting for opponent:\n[1]", full_message)
+        self.assertIn("Waiting for an opponent:\n[1] vs ?", full_message)
 
         # Check for P3's joinable game
-        self.assertIn("Join game:\n[2] Opponent: P3", full_message)
+        self.assertIn("Join game:\n[2] vs P3", full_message)
 
     def test_show_current_games_with_continuable(self):
         # P1 and P2 are in a game
@@ -159,7 +159,7 @@ class TestGameLogicDriver(unittest.TestCase):
         self.assertEqual(self.mock_send_message.call_count, 1)
         continuable_message = self.mock_send_message.call_args_list[0][0][0]
         self.assertIn("Opponent's turn:", continuable_message)
-        self.assertIn(f"[{game_id}] Opponent: P2", continuable_message)
+        self.assertIn(f"[{game_id}] vs P2", continuable_message)
 
 
 if __name__ == '__main__':
