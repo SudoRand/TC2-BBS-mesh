@@ -169,7 +169,6 @@ class TestTicTacToe(unittest.TestCase):
         self.assertIn(f"vs {p1_sn}", mock_driver_send.call_args[0][0])
         self.assertEqual(mock_ttt_send.call_count, 1)
 
-    @unittest.expectedFailure
     @patch('modules.Games.tic_tac_toe.send_message')
     @patch('modules.Games.game_logic_driver.send_message')
     def test_remote_game_flow(self, mock_driver_send, mock_ttt_send):
@@ -201,8 +200,8 @@ class TestTicTacToe(unittest.TestCase):
             # P2 makes a move
             state_p2 = get_user_state(p2_num)
             handle_tic_tac_toe_steps(p2_num, "1", state_p2['step'], state_p2, mock_interface)
-            self.assertEqual(mock_driver_send.call_count, 2 + 3 + 4)
-            self.assertIn(f"Player {p2_sn}", mock_driver_send.call_args_list[-4][0][0])
+            self.assertEqual(mock_driver_send.call_count, 2 + 3 + 5)
+            self.assertIn(f"Player {p2_sn}", mock_driver_send.call_args_list[-5][0][0])
 
     @patch('command_handlers.handle_help_command')
     @patch('modules.Games.game_logic_driver.send_message')
