@@ -124,8 +124,7 @@ class TestTicTacToe(unittest.TestCase):
         self.assertEqual(len(player1_games_after_end), 0)
 
     @patch('modules.Games.game_logic_driver.send_message')
-    @patch('modules.Games.tic_tac_toe.send_message')
-    def test_continue_game_flow(self, mock_ttt_send, mock_driver_send):
+    def test_continue_game_flow(self, mock_driver_send):
         mock_interface = MagicMock()
         p1_num = 111; p1_id = '!p1'; p1_sn = 'P1'
         p2_num = 222; p2_id = '!p2'; p2_sn = 'P2'
@@ -144,7 +143,6 @@ class TestTicTacToe(unittest.TestCase):
             handle_tic_tac_toe_command(p1_num, mock_interface)
             self.assertEqual(mock_driver_send.call_count, 1)
             self.assertIn(f"[{game_id}] vs {p2_sn}", mock_driver_send.call_args[0][0])
-            self.assertEqual(mock_ttt_send.call_count, 1)
 
 
             # 2. Player chooses to continue a game, which calls the driver
@@ -154,8 +152,7 @@ class TestTicTacToe(unittest.TestCase):
             self.assertIn(f"It's {p2_sn} (O)'s turn.", mock_driver_send.call_args_list[-1][0][0])
 
     @patch('modules.Games.game_logic_driver.send_message')
-    @patch('modules.Games.tic_tac_toe.send_message')
-    def test_list_current_games_displays_short_name(self, mock_ttt_send, mock_driver_send):
+    def test_list_current_games_displays_short_name(self, mock_driver_send):
         mock_interface = MagicMock()
         p1_num = 12345; p1_id = '!p1'; p1_sn = 'P1'
         mock_interface.nodes = { p1_id: {'num': p1_num, 'user': {'shortName': p1_sn}} }
@@ -167,7 +164,6 @@ class TestTicTacToe(unittest.TestCase):
 
         self.assertEqual(mock_driver_send.call_count, 1)
         self.assertIn(f"vs {p1_sn}", mock_driver_send.call_args[0][0])
-        self.assertEqual(mock_ttt_send.call_count, 1)
 
     @patch('modules.Games.tic_tac_toe.send_message')
     @patch('modules.Games.game_logic_driver.send_message')

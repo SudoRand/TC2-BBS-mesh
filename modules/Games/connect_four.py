@@ -104,13 +104,7 @@ def handle_connect_four_command(sender_id, interface):
     """
     game_instance = ConnectFourGame()
     driver = GameLogicDriver(game_instance, interface)
-    driver.show_current_games(sender_id)
-
-    menu = "\n[N]EW game.\n"
-    menu += "E[X]IT."
-
-    send_message(menu, sender_id, interface)
-    update_user_state(sender_id, {'command': command_str, 'step': 1})
+    driver.show_games_and_menu(sender_id, command_str)
 
 def handle_connect_four_steps(sender_id, message, step, state, interface):
     from command_handlers import handle_help_command

@@ -47,8 +47,8 @@ class GameLogicDriver:
         self._send_game_state_message(sender_id, pre_board_text=pre_board_text, board_str=board_str)
         return game_id
 
-    def show_current_games(self, sender_id):
-        """Shows lists of games a player can join or continue."""
+    def show_games_and_menu(self, sender_id, command_str):
+        """Shows lists of games a player can join or continue, plus the menu."""
         player_id_str = str(sender_id)
         response_parts = []
 
@@ -107,7 +107,11 @@ class GameLogicDriver:
             response_parts.append("No open games available. Why not start one?")
 
         response = "\n\n".join(response_parts)
+        menu = "\n[N]EW game.\n"
+        menu += "E[X]IT."
+        response += "\n" + menu
         send_message(response, sender_id, self.interface)
+        update_user_state(sender_id, {'command': command_str, 'step': 1})
 
     def join_game_by_id(self, sender_id, game_id_str):
         """Handles the logic for a player to join a game by its ID."""
