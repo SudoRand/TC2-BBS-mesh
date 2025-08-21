@@ -280,3 +280,59 @@ def get_player_stats(game_type, player_id):
         WHERE game_type = ? AND (player_x = ? OR player_o = ?) AND status = 'finished'
     """, (game_type, player_id, player_id))
     return c.fetchall()
+
+def get_all_finished_games(game_type):
+    """
+    Retrieves all finished games for a given game type.
+
+    Args:
+        game_type (str): The type of the game (e.g., 'tic_tac_toe').
+
+    Returns:
+        list: A list of tuples, where each tuple contains (player_x, player_o, winner).
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT player_x, player_o, winner
+        FROM turn_based_games
+        WHERE game_type = ? AND status = 'finished'
+    """, (game_type,))
+    return c.fetchall()
+
+def get_active_games_by_type(game_type, limit=10):
+    """
+    Retrieves all active games for a given game type, ordered by last activity.
+
+    Args:
+        game_type (str): The type of the game.
+        limit (int): The maximum number of games to retrieve.
+
+    Returns:
+        list: A list of tuples, each containing (player_x, player_o, last_activity).
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT player_x, player_o, last_activity
+        FROM turn_based_games
+        WHERE game_type = ? AND status = 'in_progress'
+        ORDER BY last_activity DESC
+        LIMIT ?
+    """, (game_type, limit))
+    return c.fetchall()
+
+def count_active_games_by_type(game_type):
+    """
+    Counts all active games for a given game type.
+
+    Args:
+        game_type (str): The type of the game.
+
+    Returns:
+        int: The number of active games.
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM turn_based_games WHERE game_type = ? AND status = 'in_progress'", (game_type,))
+    return c.fetchone()[0]

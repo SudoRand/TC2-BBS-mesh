@@ -169,7 +169,7 @@ class TestGameLogicDriver(unittest.TestCase):
         self.driver.show_stats_menu(self.p1_num, 'MOCK_CMD')
 
         self.mock_send_message.assert_called_once_with(
-            "[M]Y STATS.\nE[X]IT to game menu.",
+            "[M]Y STATS.\n[A]CTIVE GAMES.\nE[X]IT to game menu.",
             self.p1_num,
             self.mock_interface
         )
@@ -177,6 +177,52 @@ class TestGameLogicDriver(unittest.TestCase):
             self.p1_num,
             {'command': 'MOCK_CMD', 'step': 2}
         )
+
+    def test_show_leaderboard(self):
+        # P1 beats P2
+        game1_id = create_game('mock_game', str(self.p1_num), '[]')
+        join_game(game1_id, str(self.p2_num))
+        update_game_board(game1_id, '[]', str(self.p1_num))
+        from db_operations import end_game
+        end_game(game1_id, str(self.p1_num))
+
+        # P2 and P1 draw
+        game2_id = create_game('mock_game', str(self.p2_num), '[]')
+        join_game(game2_id, str(self.p1_num))
+        update_game_board(game2_id, '[]', str(self.p2_num))
+        end_game(game2_id, 'draw')
+
+        with patch('modules.Games.game_logic_driver.get_node_short_name', side_effect=['P1', 'P2']):
+            self.driver.show_leaderboard(self.p1_num)
+
+        self.mock_send_message.assert_called_once()
+        leaderboard_text = self.mock_send_message.call_args[0][0]
+        self.assertIn("MOCK_GAME LEADERBOARD", leaderboard_text)
+        self.assertIn("1. P1: 4 pts", leaderboard_text)
+        self.assertIn("2. P2: 1 pts", leaderboard_text)
+
+    def test_show_active_games(self):
+        # P1 vs P2
+        game1_id = create_game('mock_game', str(self.p1_num), '[]')
+        join_game(game1_id, str(self.p2_num))
+
+        # P1 vs P3 (waiting)
+        p3_num = 333
+        p3_id = '!p3'
+        p3_sn = 'P3'
+        self.mock_interface.nodes[p3_id] = {'num': p3_num, 'user': {'shortName': p3_sn}}
+        self.mock_get_node_id.side_effect = lambda num, iface: {self.p1_num: self.p1_id, self.p2_num: self.p2_id, p3_num: p3_id}.get(int(num))
+        game2_id = create_game('mock_game', str(self.p1_num), '[]')
+
+
+        with patch('modules.Games.game_logic_driver.get_node_short_name', side_effect=['P1', 'P2', 'P1', 'P3']):
+            self.driver.show_active_games(self.p1_num)
+
+        self.mock_send_message.assert_called_once()
+        active_games_text = self.mock_send_message.call_args[0][0]
+        self.assertIn("ACTIVE MOCK_GAME GAMES", active_games_text)
+        self.assertIn("P1 vs P2", active_games_text)
+        self.assertNotIn("P1 vs ?", active_games_text)
 
 
 if __name__ == '__main__':

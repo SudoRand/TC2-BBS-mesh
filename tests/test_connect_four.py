@@ -262,6 +262,34 @@ class TestConnectFour(unittest.TestCase):
         # Assert: show_player_stats is called
         mock_driver_instance.show_player_stats.assert_called_once_with(sender_id)
 
+    @patch('modules.Games.connect_four.GameLogicDriver')
+    def test_leaderboard_menu_flow(self, MockGameLogicDriver):
+        # Arrange
+        mock_driver_instance = MockGameLogicDriver.return_value
+        sender_id = 123
+        interface = MagicMock()
+        state_step_1 = {'command': 'CONNECT_FOUR', 'step': 1}
+
+        # Act: User selects 'l' for leaderboard
+        handle_connect_four_steps(sender_id, 'l', 1, state_step_1, interface)
+
+        # Assert: show_leaderboard is called
+        mock_driver_instance.show_leaderboard.assert_called_once_with(sender_id)
+
+    @patch('modules.Games.connect_four.GameLogicDriver')
+    def test_active_games_menu_flow(self, MockGameLogicDriver):
+        # Arrange
+        mock_driver_instance = MockGameLogicDriver.return_value
+        sender_id = 123
+        interface = MagicMock()
+        state_step_2 = {'command': 'CONNECT_FOUR', 'step': 2}
+
+        # Act: User selects 'a' for active games
+        handle_connect_four_steps(sender_id, 'a', 2, state_step_2, interface)
+
+        # Assert: show_active_games is called
+        mock_driver_instance.show_active_games.assert_called_once_with(sender_id)
+
 
 if __name__ == '__main__':
     unittest.main()

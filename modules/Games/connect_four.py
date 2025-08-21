@@ -131,6 +131,8 @@ def handle_connect_four_steps(sender_id, message, step, state, interface):
             update_user_state(sender_id, {'command': command_str, 'step': 14, 'board': board})
         elif message == 's':
             driver.show_stats_menu(sender_id, command_str)
+        elif message == 'l':
+            driver.show_leaderboard(sender_id)
         elif message.isdigit():
             game_id = int(message)
             player_id_str = str(sender_id)
@@ -156,6 +158,8 @@ def handle_connect_four_steps(sender_id, message, step, state, interface):
     elif step == 2: # Stats menu
         if message == 'm':
             driver.show_player_stats(sender_id)
+        elif message == 'a':
+            driver.show_active_games(sender_id)
         elif message == 'x':
             driver.show_games_and_menu(sender_id, command_str)
         else:

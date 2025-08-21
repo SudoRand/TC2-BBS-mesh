@@ -7,7 +7,7 @@ from db_operations import (
     join_game,
     get_game_by_id,
     update_game_board,
-    end_game, get_player_stats,
+    end_game, get_player_stats, get_all_finished_games, get_active_games_by_type, count_active_games_by_type,
 )
 from utils import send_message, get_node_short_name, get_node_id_from_num, update_user_state
 from .game_interface import GameInterface
@@ -109,17 +109,69 @@ class GameLogicDriver:
         response = "\n\n".join(response_parts)
         menu = "\n[N]EW game.\n"
         menu += "[S]TATS.\n"
+        menu += "[L]EADERBOARD.\n"
         menu += "E[X]IT."
         response += "\n" + menu
         send_message(response, sender_id, self.interface)
         update_user_state(sender_id, {'command': command_str, 'step': 1})
 
+    def show_leaderboard(self, sender_id):
+        """Calculates and displays the leaderboard."""
+        games = get_all_finished_games(self.game_type)
+
+        if not games:
+            send_message("No games have been played yet.", sender_id, self.interface)
+            return
+
+        scores = {}
+        for player_x, player_o, winner in games:
+            if winner == 'draw':
+                scores[player_x] = scores.get(player_x, 0) + 1
+                scores[player_o] = scores.get(player_o, 0) + 1
+            else:
+                scores[winner] = scores.get(winner, 0) + 3
+                loser = player_x if winner == player_o else player_o
+                scores[loser] = scores.get(loser, 0) + 0
+
+        sorted_players = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+
+        response = f"--- {self.game.game_type.upper()} LEADERBOARD ---\n"
+        for i, (player_id, score) in enumerate(sorted_players):
+            player_node_id = get_node_id_from_num(int(player_id), self.interface)
+            player_sn = get_node_short_name(player_node_id, self.interface)
+            response += f"{i+1}. {player_sn}: {score} pts\n"
+
+        send_message(response, sender_id, self.interface)
+
     def show_stats_menu(self, sender_id, command_str):
         """Displays the stats menu and updates the user's state."""
         menu = "[M]Y STATS.\n"
+        menu += "[A]CTIVE GAMES.\n"
         menu += "E[X]IT to game menu."
         send_message(menu, sender_id, self.interface)
         update_user_state(sender_id, {'command': command_str, 'step': 2})
+
+    def show_active_games(self, sender_id):
+        """Calculates and displays the active games list."""
+        games = get_active_games_by_type(self.game_type)
+        total_games = count_active_games_by_type(self.game_type)
+
+        if not games:
+            send_message("No active games.", sender_id, self.interface)
+            return
+
+        response = f"--- ACTIVE {self.game.game_type.upper()} GAMES ---\n"
+        for player_x, player_o, last_activity in games:
+            p1_sn = get_node_short_name(get_node_id_from_num(int(player_x), self.interface), self.interface)
+            p2_sn = get_node_short_name(get_node_id_from_num(int(player_o), self.interface), self.interface) if player_o else "?"
+            # format last_activity to just date
+            date_str = last_activity.split(" ")[0]
+            response += f"{p1_sn} vs {p2_sn} ({date_str})\n"
+
+        if total_games > 10:
+            response += f"+ {total_games - 10} older"
+
+        send_message(response, sender_id, self.interface)
 
     def show_player_stats(self, sender_id):
         """Calculates and displays the player's game stats."""
@@ -349,7 +401,7 @@ class GameLogicDriver:
 
         if str(sender_id) == p_x_id and p_o_id is None:  # First move before P2 joins
             pass  # P1 is notified when P2 joins
-        elif symbol_count == 1 and str(sender_id) == str(p_o_id):  # First move by O
+        elif symbol_count == 1 and str(sender_id) == p_o_id:  # First move by O
             pre_board_text = f"Player {mover_sn} has joined your game!"
             post_board_text = "It is your turn (X)."
             self._send_game_state_message(int(p_x_id), pre_board_text=pre_board_text, board_str=board_str,
