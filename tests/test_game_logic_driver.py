@@ -143,7 +143,7 @@ class TestGameLogicDriver(unittest.TestCase):
         full_message = self.mock_send_message.call_args_list[0][0][0]
 
         # Check for P1's waiting game
-        self.assertIn("Needs an opponent:\n[1] vs ?", full_message)
+        self.assertIn("You need opponent:\n[1] vs ?", full_message)
 
         # Check for P3's joinable game
         self.assertIn("Join game:\n[2] vs P3", full_message)

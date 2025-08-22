@@ -89,7 +89,7 @@ class GameLogicDriver:
         waiting_games = get_waiting_games_for_creator(self.game_type, player_id_str)
         if waiting_games:
             waiting_game_lines = [f'[{game[0]}] vs ?' for game in waiting_games]
-            response_parts.append("Needs an opponent:\n" + "\n".join(waiting_game_lines))
+            response_parts.append("You need opponent:\n" + "\n".join(waiting_game_lines))
 
         # Show open games that the user can join
         open_games = get_open_games(self.game_type)
