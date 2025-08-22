@@ -109,7 +109,6 @@ class GameLogicDriver:
         response = "\n\n".join(response_parts)
         menu = "\n[N]EW game.\n"
         menu += "[S]TATS.\n"
-        menu += "[L]EADERBOARD.\n"
         menu += "E[X]IT."
         response += "\n" + menu
         send_message(response, sender_id, self.interface)
@@ -147,6 +146,7 @@ class GameLogicDriver:
         """Displays the stats menu and updates the user's state."""
         menu = "[M]Y STATS.\n"
         menu += "[A]CTIVE GAMES.\n"
+        menu += "[L]EADERBOARD.\n"
         menu += "E[X]IT to game menu."
         send_message(menu, sender_id, self.interface)
         update_user_state(sender_id, {'command': command_str, 'step': 2})

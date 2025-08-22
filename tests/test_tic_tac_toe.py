@@ -258,11 +258,14 @@ class TestTicTacToe(unittest.TestCase):
         sender_id = 123
         interface = MagicMock()
         state_step_1 = {'command': 'TIC_TAC_TOE', 'step': 1}
+        state_step_2 = {'command': 'TIC_TAC_TOE', 'step': 2}
 
-        # Act: User selects 'l' for leaderboard
-        handle_tic_tac_toe_steps(sender_id, 'l', 1, state_step_1, interface)
+        # Act: User selects 's' for stats, then 'l' for leaderboard
+        handle_tic_tac_toe_steps(sender_id, 's', 1, state_step_1, interface)
+        handle_tic_tac_toe_steps(sender_id, 'l', 2, state_step_2, interface)
 
         # Assert: show_leaderboard is called
+        mock_driver_instance.show_stats_menu.assert_called_once_with(sender_id, 'TIC_TAC_TOE')
         mock_driver_instance.show_leaderboard.assert_called_once_with(sender_id)
 
     @patch('modules.Games.tic_tac_toe.GameLogicDriver')

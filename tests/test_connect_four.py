@@ -269,11 +269,14 @@ class TestConnectFour(unittest.TestCase):
         sender_id = 123
         interface = MagicMock()
         state_step_1 = {'command': 'CONNECT_FOUR', 'step': 1}
+        state_step_2 = {'command': 'CONNECT_FOUR', 'step': 2}
 
-        # Act: User selects 'l' for leaderboard
-        handle_connect_four_steps(sender_id, 'l', 1, state_step_1, interface)
+        # Act: User selects 's' for stats, then 'l' for leaderboard
+        handle_connect_four_steps(sender_id, 's', 1, state_step_1, interface)
+        handle_connect_four_steps(sender_id, 'l', 2, state_step_2, interface)
 
         # Assert: show_leaderboard is called
+        mock_driver_instance.show_stats_menu.assert_called_once_with(sender_id, 'CONNECT_FOUR')
         mock_driver_instance.show_leaderboard.assert_called_once_with(sender_id)
 
     @patch('modules.Games.connect_four.GameLogicDriver')

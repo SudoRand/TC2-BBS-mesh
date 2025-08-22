@@ -169,7 +169,7 @@ class TestGameLogicDriver(unittest.TestCase):
         self.driver.show_stats_menu(self.p1_num, 'MOCK_CMD')
 
         self.mock_send_message.assert_called_once_with(
-            "[M]Y STATS.\n[A]CTIVE GAMES.\nE[X]IT to game menu.",
+            "[M]Y STATS.\n[A]CTIVE GAMES.\n[L]EADERBOARD.\nE[X]IT to game menu.",
             self.p1_num,
             self.mock_interface
         )
