@@ -167,11 +167,11 @@ class TestGameLogicDriver(unittest.TestCase):
 
     def test_show_stats_menu(self):
         self.driver.show_stats_menu(self.p1_num, 'MOCK_CMD')
-            self.mock_send_message.assert_called_once_with(
-                "[M]y Stats\n[A]ctive Games\n[L]eaderboard\nE[X]IT",
-                self.p1_num,
-                self.mock_interface
-            )
+        self.mock_send_message.assert_called_once_with(
+            "[M]y Stats\n[A]ctive Games\n[L]eaderboard\nE[X]IT",
+            self.p1_num,
+            self.mock_interface
+        )
         self.mock_update_user_state.assert_called_once_with(
             self.p1_num,
             {'command': 'MOCK_CMD', 'step': 2}
