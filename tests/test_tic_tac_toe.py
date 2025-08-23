@@ -103,11 +103,11 @@ class TestTicTacToe(unittest.TestCase):
         join_game(game_id, "player2")
 
         board = ["X", "O", "X", "X", "O", "X", "O", "X", "O"]
-        self.assertEqual(self.game_instance.check_winner(board), "draw")
+        self.assertEqual(self.game_instance.check_winner(board), "tie")
 
-        end_game(game_id, "draw")
+        end_game(game_id, "tie")
         game = get_game_by_id(game_id)
-        self.assertEqual(game[6], "draw") # winner is column 6
+        self.assertEqual(game[6], "tie") # winner is column 6
         self.assertEqual(game[7], "finished")
 
     def test_get_active_games_for_player(self):

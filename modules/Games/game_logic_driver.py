@@ -124,18 +124,18 @@ class GameLogicDriver:
 
         def get_player(player_id):
             if player_id not in player_stats:
-                player_stats[player_id] = {'score': 0, 'wins': 0, 'losses': 0, 'draws': 0}
+                player_stats[player_id] = {'score': 0, 'wins': 0, 'losses': 0, 'ties': 0}
             return player_stats[player_id]
 
         for player_x_id, player_o_id, winner_id in games:
             player_x = get_player(player_x_id)
             player_o = get_player(player_o_id)
 
-            if winner_id == 'draw':
+            if winner_id == 'tie':
                 player_x['score'] += 1
-                player_x['draws'] += 1
+                player_x['ties'] += 1
                 player_o['score'] += 1
-                player_o['draws'] += 1
+                player_o['ties'] += 1
             else:
                 if winner_id == player_x_id:
                     winner_stats = player_x
@@ -162,7 +162,7 @@ class GameLogicDriver:
         for i, (player_id, stats) in enumerate(sorted_players):
             player_node_id = get_node_id_from_num(int(player_id), self.interface)
             player_sn = get_node_short_name(player_node_id, self.interface)
-            response += f"{i+1}. {player_sn}: {stats['score']} pts ({stats['wins']}W-{stats['losses']}L-{stats['draws']}D)\n"
+            response += f"{i+1}. {player_sn}: {stats['score']} pts ({stats['wins']}W-{stats['ties']}T-{stats['losses']}L)\n"
 
         send_message(response, sender_id, self.interface)
 
@@ -206,14 +206,14 @@ class GameLogicDriver:
             send_message("No game history found.", sender_id, self.interface)
             return
 
-        wins = losses = draws = 0
+        wins = losses = ties = 0
         opponent_stats = {}
 
         for player_x, player_o, winner in stats:
             if winner == player_id_str:
                 wins += 1
-            elif winner == 'draw':
-                draws += 1
+            elif winner == 'tie':
+                ties += 1
             else:
                 losses += 1
 
@@ -225,12 +225,12 @@ class GameLogicDriver:
 
             if opponent_id:
                 if opponent_id not in opponent_stats:
-                    opponent_stats[opponent_id] = {'w': 0, 'l': 0, 'd': 0}
+                    opponent_stats[opponent_id] = {'w': 0, 't': 0, 'l': 0}
 
                 if winner == player_id_str:
                     opponent_stats[opponent_id]['w'] += 1
-                elif winner == 'draw':
-                    opponent_stats[opponent_id]['d'] += 1
+                elif winner == 'tie':
+                    opponent_stats[opponent_id]['t'] += 1
                 else:
                     opponent_stats[opponent_id]['l'] += 1
 
@@ -251,14 +251,14 @@ class GameLogicDriver:
 
         response = f"STATS for {player_sn}\n"
         response += f"Rank: {player_rank}/{total_players} | Points: {player_points}\n"
-        response += f"Overall: {wins}W - {losses}L - {draws}D\n\n"
+        response += f"Overall: {wins}W-{ties}T-{losses}L \n\n"
 
         if opponent_stats:
             response += "Vs:\n"
             for opponent_id, s in opponent_stats.items():
                 opponent_node_id = get_node_id_from_num(int(opponent_id), self.interface)
                 opponent_sn = get_node_short_name(opponent_node_id, self.interface) if opponent_node_id else "Unknown"
-                response += f"{opponent_sn}: {s['w']}W - {s['l']}L - {s['d']}D\n"
+                response += f"{opponent_sn}: {s['w']}W-{s['t']}T-{s['l']}L \n"
 
         send_message(response, sender_id, self.interface)
 
@@ -393,12 +393,12 @@ class GameLogicDriver:
         return True
 
     def _handle_game_end(self, game_id, board, winner_symbol, current_player, p_x_id, p_o_id, p_x_sn, p_o_sn):
-        """Handles the logic when a game has ended (win or draw)."""
+        """Handles the logic when a game has ended (win or tie)."""
         board_str = self.game.render_board(board, p_x_sn, p_o_sn)
 
-        if winner_symbol == 'draw':
-            end_game(game_id, "draw")
-            post_board_text = "It's a draw!\n\nType 'X' to return to the games menu."
+        if winner_symbol == 'tie':
+            end_game(game_id, "tie")
+            post_board_text = "It's a tie!\n\nType 'X' to return to the games menu."
             self._send_game_state_message(int(p_x_id), board_str=board_str, post_board_text=post_board_text)
             if p_o_id:
                 self._send_game_state_message(int(p_o_id), board_str=board_str, post_board_text=post_board_text)

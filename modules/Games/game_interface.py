@@ -71,13 +71,13 @@ class GameInterface(ABC):
     @abstractmethod
     def check_winner(self, board):
         """
-        Checks the board for a winner or a draw.
+        Checks the board for a winner or a tie.
 
         Args:
             board: The current state of the board.
 
         Returns:
-            str: The symbol of the winner ('X' or 'O'), 'draw' if the game is a draw,
+            str: The symbol of the winner ('X' or 'O'), 'tie' if the game is a tie,
                  or None if the game is still in progress.
         """
         pass

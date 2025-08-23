@@ -93,7 +93,7 @@ class ConnectFourGame(GameInterface):
                     return board[r][c]
 
         if all(cell != " " for row in board for cell in row):
-            return "draw"
+            return "tie"
 
         return None
 

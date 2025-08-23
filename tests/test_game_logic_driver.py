@@ -186,11 +186,11 @@ class TestGameLogicDriver(unittest.TestCase):
         from db_operations import end_game
         end_game(game1_id, str(self.p1_num))
 
-        # P2 and P1 draw
+        # P2 and P1 tie
         game2_id = create_game('mock_game', str(self.p2_num), '[]')
         join_game(game2_id, str(self.p1_num))
         update_game_board(game2_id, '[]', str(self.p2_num))
-        end_game(game2_id, 'draw')
+        end_game(game2_id, 'tie')
 
         with patch('modules.Games.game_logic_driver.get_node_short_name', side_effect=['P1', 'P2']):
             self.driver.show_leaderboard(self.p1_num)
@@ -198,8 +198,8 @@ class TestGameLogicDriver(unittest.TestCase):
         self.mock_send_message.assert_called_once()
         leaderboard_text = self.mock_send_message.call_args[0][0]
         self.assertIn("MOCK_GAME LEADERBOARD", leaderboard_text)
-        self.assertIn("1. P1: 4 pts (1W-0L-1D)", leaderboard_text)
-        self.assertIn("2. P2: 1 pts (0W-1L-1D)", leaderboard_text)
+        self.assertIn("1. P1: 4 pts (1W-1T-0L)", leaderboard_text)
+        self.assertIn("2. P2: 1 pts (0W-1T-1L)", leaderboard_text)
 
     def test_show_player_stats(self):
         # P1 beats P2
@@ -209,11 +209,11 @@ class TestGameLogicDriver(unittest.TestCase):
         from db_operations import end_game
         end_game(game1_id, str(self.p1_num))
 
-        # P2 and P1 draw
+        # P2 and P1 tie
         game2_id = create_game('mock_game', str(self.p2_num), '[]')
         join_game(game2_id, str(self.p1_num))
         update_game_board(game2_id, '[]', str(self.p2_num))
-        end_game(game2_id, 'draw')
+        end_game(game2_id, 'tie')
 
         with patch('modules.Games.game_logic_driver.get_node_short_name', side_effect=['P1', 'P2', 'P1', 'P2']):
             self.driver.show_player_stats(self.p1_num)
@@ -222,9 +222,9 @@ class TestGameLogicDriver(unittest.TestCase):
         stats_text = self.mock_send_message.call_args[0][0]
         self.assertIn("STATS for P1", stats_text)
         self.assertIn("Rank: 1/2 | Points: 4", stats_text)
-        self.assertIn("Overall: 1W - 0L - 1D", stats_text)
+        self.assertIn("Overall: 1W-1T-0L", stats_text)
         self.assertIn("Vs:", stats_text)
-        self.assertIn("P2: 1W - 0L - 1D", stats_text)
+        self.assertIn("P2: 1W-1T-0L", stats_text)
 
     def test_show_active_games(self):
         # P1 vs P2

@@ -65,7 +65,7 @@ class TicTacToeGame(GameInterface):
                 return board[combo[0]]
 
         if " " not in board:
-            return "draw"
+            return "tie"
 
         return None
 
