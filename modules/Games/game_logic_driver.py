@@ -114,31 +114,55 @@ class GameLogicDriver:
         send_message(response, sender_id, self.interface)
         update_user_state(sender_id, {'command': command_str, 'step': 1})
 
+    def _calculate_leaderboard_data(self):
+        """Calculates scores and stats for all players."""
+        games = get_all_finished_games(self.game_type)
+        if not games:
+            return None
+
+        player_stats = {}
+
+        def get_player(player_id):
+            if player_id not in player_stats:
+                player_stats[player_id] = {'score': 0, 'wins': 0, 'losses': 0, 'draws': 0}
+            return player_stats[player_id]
+
+        for player_x_id, player_o_id, winner_id in games:
+            player_x = get_player(player_x_id)
+            player_o = get_player(player_o_id)
+
+            if winner_id == 'draw':
+                player_x['score'] += 1
+                player_x['draws'] += 1
+                player_o['score'] += 1
+                player_o['draws'] += 1
+            else:
+                if winner_id == player_x_id:
+                    winner_stats = player_x
+                    loser_stats = player_o
+                else:
+                    winner_stats = player_o
+                    loser_stats = player_x
+
+                winner_stats['score'] += 3
+                winner_stats['wins'] += 1
+                loser_stats['losses'] += 1
+
+        return sorted(player_stats.items(), key=lambda item: item[1]['score'], reverse=True)
+
     def show_leaderboard(self, sender_id):
         """Calculates and displays the leaderboard."""
-        games = get_all_finished_games(self.game_type)
+        sorted_players = self._calculate_leaderboard_data()
 
-        if not games:
+        if not sorted_players:
             send_message("No games have been played yet.", sender_id, self.interface)
             return
 
-        scores = {}
-        for player_x, player_o, winner in games:
-            if winner == 'draw':
-                scores[player_x] = scores.get(player_x, 0) + 1
-                scores[player_o] = scores.get(player_o, 0) + 1
-            else:
-                scores[winner] = scores.get(winner, 0) + 3
-                loser = player_x if winner == player_o else player_o
-                scores[loser] = scores.get(loser, 0) + 0
-
-        sorted_players = sorted(scores.items(), key=lambda item: item[1], reverse=True)
-
         response = f"--- {self.game.game_type.upper()} LEADERBOARD ---\n"
-        for i, (player_id, score) in enumerate(sorted_players):
+        for i, (player_id, stats) in enumerate(sorted_players):
             player_node_id = get_node_id_from_num(int(player_id), self.interface)
             player_sn = get_node_short_name(player_node_id, self.interface)
-            response += f"{i+1}. {player_sn}: {score} pts\n"
+            response += f"{i+1}. {player_sn}: {stats['score']} pts ({stats['wins']}W-{stats['losses']}L-{stats['draws']}D)\n"
 
         send_message(response, sender_id, self.interface)
 
@@ -210,11 +234,23 @@ class GameLogicDriver:
                 else:
                     opponent_stats[opponent_id]['l'] += 1
 
-        # Get the short name of the player
+        sorted_players = self._calculate_leaderboard_data()
+        player_rank = "N/A"
+        player_points = 0
+        total_players = 0
+        if sorted_players:
+            total_players = len(sorted_players)
+            for i, (player_id, p_stats) in enumerate(sorted_players):
+                if player_id == player_id_str:
+                    player_rank = i + 1
+                    player_points = p_stats['score']
+                    break
+
         player_node_id = get_node_id_from_num(int(player_id_str), self.interface)
         player_sn = get_node_short_name(player_node_id, self.interface)
 
         response = f"STATS for {player_sn}\n"
+        response += f"Rank: {player_rank}/{total_players} | Points: {player_points}\n"
         response += f"Overall: {wins}W - {losses}L - {draws}D\n\n"
 
         if opponent_stats:
