@@ -149,7 +149,7 @@ class TestGameLogicDriver(unittest.TestCase):
         self.assertIn("Join game:\n[2] vs P3", full_message)
 
         # Check for menu
-        self.assertIn("[N]EW game", full_message)
+        self.assertIn("[N]ew Game", full_message)
 
     def test_show_games_and_menu_with_continuable(self):
         # P1 and P2 are in a game
@@ -163,16 +163,15 @@ class TestGameLogicDriver(unittest.TestCase):
         continuable_message = self.mock_send_message.call_args_list[0][0][0]
         self.assertIn("Opponent's turn:", continuable_message)
         self.assertIn(f"[{game_id}] vs P2", continuable_message)
-        self.assertIn("[N]EW game", continuable_message)
+        self.assertIn("[N]ew Game", continuable_message)
 
     def test_show_stats_menu(self):
         self.driver.show_stats_menu(self.p1_num, 'MOCK_CMD')
-
-        self.mock_send_message.assert_called_once_with(
-            "[M]Y STATS.\n[A]CTIVE GAMES.\n[L]EADERBOARD.\nE[X]IT to game menu.",
-            self.p1_num,
-            self.mock_interface
-        )
+            self.mock_send_message.assert_called_once_with(
+                "[M]y Stats\n[A]ctive Games\n[L]eaderboard\nE[X]IT",
+                self.p1_num,
+                self.mock_interface
+            )
         self.mock_update_user_state.assert_called_once_with(
             self.p1_num,
             {'command': 'MOCK_CMD', 'step': 2}

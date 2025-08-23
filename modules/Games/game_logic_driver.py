@@ -107,9 +107,9 @@ class GameLogicDriver:
             response_parts.append("No open games available. Why not start one?")
 
         response = "\n\n".join(response_parts)
-        menu = "\n[N]EW game.\n"
-        menu += "[S]TATS.\n"
-        menu += "E[X]IT."
+        menu = "\n[N]ew Game\n"
+        menu += "[S]tats\n"
+        menu += "E[X]it"
         response += "\n" + menu
         send_message(response, sender_id, self.interface)
         update_user_state(sender_id, {'command': command_str, 'step': 1})
@@ -168,10 +168,10 @@ class GameLogicDriver:
 
     def show_stats_menu(self, sender_id, command_str):
         """Displays the stats menu and updates the user's state."""
-        menu = "[M]Y STATS.\n"
-        menu += "[A]CTIVE GAMES.\n"
-        menu += "[L]EADERBOARD.\n"
-        menu += "E[X]IT to game menu."
+        menu = "[M]y Stats\n"
+        menu += "[A]ctive Games\n"
+        menu += "[L]eaderboard\n"
+        menu += "E[X]IT"
         send_message(menu, sender_id, self.interface)
         update_user_state(sender_id, {'command': command_str, 'step': 2})
 
