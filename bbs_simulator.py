@@ -27,7 +27,7 @@ class SimulatorInterface:
         self.allowed_nodes = []
 
     def sendText(self, text, destinationId=None, wantAck=False, wantResponse=False):
-        print(f"\033[96mBBS: {text}\033[0m")
+        print(f"\033[96mBBS:\n{text}\033[0m")
         return type('Packet', (), {'id': 'simulator_packet'})()
 
     def close(self):
