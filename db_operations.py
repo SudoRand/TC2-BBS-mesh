@@ -336,3 +336,22 @@ def count_active_games_by_type(game_type):
     c = conn.cursor()
     c.execute("SELECT COUNT(*) FROM turn_based_games WHERE game_type = ? AND status = 'in_progress'", (game_type,))
     return c.fetchone()[0]
+
+def count_my_turn_games(game_type, player_id):
+    """
+    Counts the number of active games of a specific type where it is the given player's turn.
+
+    Args:
+        game_type (str): The type of the game.
+        player_id (str): The ID of the player.
+
+    Returns:
+        int: The number of active games where it is the player's turn.
+    """
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("""
+        SELECT COUNT(*) FROM turn_based_games
+        WHERE game_type = ? AND status = 'in_progress' AND current_player = ?
+    """, (game_type, str(player_id)))
+    return c.fetchone()[0]

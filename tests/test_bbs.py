@@ -136,7 +136,8 @@ class TestBBS(unittest.TestCase):
     def test_main_menu(self):
         sender_id = 1
         self.mock_get_node_id.return_value = '!a_mock_node_id'
-        state = self.message_processing.process_message(sender_id, 'help', self.interface)
+        with patch('command_handlers.count_my_turn_games', return_value=0):
+            state = self.message_processing.process_message(sender_id, 'help', self.interface)
         self.mock_send_message.assert_called_with(unittest.mock.ANY, sender_id, self.interface)
         # Check that the main menu is displayed
         call_args, _ = self.mock_send_message.call_args
@@ -620,17 +621,10 @@ class TestBBS(unittest.TestCase):
         sender_id = 1
         self.mock_get_node_id.return_value = '!a_mock_node_id'
         # Patch get_active_games, get_game_by_id, and get_mail in command_handlers
-        with patch('command_handlers.get_active_games') as mock_get_active_games, \
-             patch('command_handlers.get_game_by_id') as mock_get_game_by_id, \
+        with patch('command_handlers.get_active_games'), \
+             patch('command_handlers.get_game_by_id'), \
              patch('command_handlers.get_mail') as mock_get_mail, \
              patch('command_handlers.count_my_turn_games') as mock_count_my_turn_games:
-            mock_get_active_games.return_value = [
-                ('game1', 'tic_tac_toe', '!a_mock_node_id', '!another_mock_node_id'),
-                ('game2', 'connect_four', '!a_mock_node_id', '!another_mock_node_id'),
-            ]
-            mock_get_game_by_id.side_effect = lambda game_id: (
-                ('game1', 'tic_tac_toe', 'X') if game_id == 'game1' else ('game2', 'connect_four', 'X')
-            )
             # Simulate 3 mail messages
             mock_get_mail.return_value = [
                 (1, 'MOCK2', 'Subject1', '2025-08-30', 'msgid1'),
