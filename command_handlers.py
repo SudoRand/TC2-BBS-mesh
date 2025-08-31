@@ -100,7 +100,7 @@ def handle_help_command(sender_id, interface, menu_name=None):
         node_id = get_node_id_from_num(sender_id, interface)
         my_turn_count = count_my_turn_games('tic_tac_toe', node_id)
 
-        response = build_menu(current_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)}) 🕹️:{my_turn_count}")
+        response = build_menu(current_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)} 🕹️:{my_turn_count})")
 
     send_message(response, sender_id, interface)
 

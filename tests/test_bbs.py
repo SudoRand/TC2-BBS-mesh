@@ -144,7 +144,7 @@ class TestBBS(unittest.TestCase):
         self.assertIn("TC² BBS", call_args[0])
         # Verify the entire menu block
         expected_menu = textwrap.dedent("""\
-            💾TC² BBS💾 (✉️:0) 🕹️:0
+            💾TC² BBS💾 (✉️:0 🕹️:0)
             [Q]uick Commands
             [B]BS
             [U]tilities
@@ -318,7 +318,7 @@ class TestBBS(unittest.TestCase):
         self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_num, self.interface)
         last_call = self.mock_send_message.call_args_list[-1]
         call_args, _ = last_call
-        self.assertRegex(call_args[0], r"💾TC² BBS💾 \(✉️:\d+\) 🕹️:\d+\n")
+        self.assertRegex(call_args[0], r"💾TC² BBS💾 \(✉️:\d+ 🕹️:\d+\)\n")
         self.assertEqual(state, {'command': 'MAIN_MENU', 'step': 1})
 
     def _test_post_bulletin(self, board_char, board_name):
@@ -637,7 +637,7 @@ class TestBBS(unittest.TestCase):
             call_args, _ = self.mock_send_message.call_args
             menu_text = call_args[0]
             expected_menu = textwrap.dedent("""\
-                💾TC² BBS💾 (✉️:3) 🕹️:2
+                💾TC² BBS💾 (✉️:3 🕹️:2)
                 [Q]uick Commands
                 [B]BS
                 [U]tilities
