@@ -6,6 +6,7 @@ import configparser
 import sqlite3
 import tempfile
 import shutil
+import textwrap
 import importlib
 import logging
 
@@ -140,6 +141,16 @@ class TestBBS(unittest.TestCase):
         # Check that the main menu is displayed
         call_args, _ = self.mock_send_message.call_args
         self.assertIn("TC² BBS", call_args[0])
+        # Verify the entire menu block
+        expected_menu = textwrap.dedent("""\
+            💾TC² BBS💾 (✉️:0) 🕹️:0
+            [Q]uick Commands
+            [B]BS
+            [U]tilities
+            [G]ames
+            E[X]IT
+        """).strip()
+        self.assertEqual(call_args[0].strip(), expected_menu)
         self.assertEqual(state['command'], 'MAIN_MENU')
 
     def test_quick_commands_menu(self):
@@ -238,6 +249,76 @@ class TestBBS(unittest.TestCase):
         last_call = self.mock_send_message.call_args_list[-1]
         call_args, _ = last_call
         self.assertIn("deleted", call_args[0])
+
+    def test_read_mail_invalid_input(self):
+        sender_id = '!a_mock_node_id'
+        recipient_id = '!another_mock_node_id'
+        recipient_num = 2
+
+        db_operations.add_mail(sender_id, 'MOCK', recipient_id, 'Test Subject', 'Test Content', [], self.interface)
+
+        # Start the mail reading process
+        state = self.message_processing.process_message(recipient_num, 'help', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'b', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'm', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'r', self.interface)
+
+        # Send invalid input
+        state = self.message_processing.process_message(recipient_num, 'invalid', self.interface)
+
+        # Check that an error message is displayed
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_num, self.interface)
+        last_call = self.mock_send_message.call_args_list[-1]
+        call_args, _ = last_call
+        self.assertIn("Invalid input. Please enter a message number, 'help', or 'x' to exit.", call_args[0])
+        self.assertEqual(state['command'], 'MAIL')
+        self.assertEqual(state['step'], 2)
+
+    def test_read_mail_help_command(self):
+        sender_id = '!a_mock_node_id'
+        recipient_id = '!another_mock_node_id'
+        recipient_num = 2
+
+        db_operations.add_mail(sender_id, 'MOCK', recipient_id, 'Test Subject', 'Test Content', [], self.interface)
+
+        # Start the mail reading process
+        state = self.message_processing.process_message(recipient_num, 'help', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'b', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'm', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'r', self.interface)
+
+        # Send 'help' command
+        state = self.message_processing.process_message(recipient_num, 'help', self.interface)
+
+        # Check that the help message is displayed (main menu)
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_num, self.interface)
+        last_call = self.mock_send_message.call_args_list[-1]
+        call_args, _ = last_call
+        self.assertIn("💾TC² BBS💾", call_args[0])
+        self.assertEqual(state['command'], 'MAIN_MENU')
+
+    def test_read_mail_exit_command(self):
+        sender_id = '!a_mock_node_id'
+        recipient_id = '!another_mock_node_id'
+        recipient_num = 2
+
+        db_operations.add_mail(sender_id, 'MOCK', recipient_id, 'Test Subject', 'Test Content', [], self.interface)
+
+        # Start the mail reading process
+        state = self.message_processing.process_message(recipient_num, 'help', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'b', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'm', self.interface)
+        state = self.message_processing.process_message(recipient_num, 'r', self.interface)
+
+        # Send 'x' command
+        state = self.message_processing.process_message(recipient_num, 'x', self.interface)
+
+        # Check that the exit message is displayed and state is reset
+        self.mock_send_message.assert_any_call(unittest.mock.ANY, recipient_num, self.interface)
+        last_call = self.mock_send_message.call_args_list[-1]
+        call_args, _ = last_call
+        self.assertRegex(call_args[0], r"💾TC² BBS💾 \(✉️:\d+\) 🕹️:\d+\n")
+        self.assertEqual(state, {'command': 'MAIN_MENU', 'step': 1})
 
     def _test_post_bulletin(self, board_char, board_name):
         sender_id = 1
@@ -535,6 +616,42 @@ class TestBBS(unittest.TestCase):
                     mock_print.assert_any_call("- SIM (Simulator Node)")
                     mock_print.assert_any_call("- SIM2 (Second Node)")
 
+    def test_main_menu_icons_and_items(self):
+        sender_id = 1
+        self.mock_get_node_id.return_value = '!a_mock_node_id'
+        # Patch get_active_games, get_game_by_id, and get_mail in command_handlers
+        with patch('command_handlers.get_active_games') as mock_get_active_games, \
+             patch('command_handlers.get_game_by_id') as mock_get_game_by_id, \
+             patch('command_handlers.get_mail') as mock_get_mail, \
+             patch('command_handlers.count_my_turn_games') as mock_count_my_turn_games:
+            mock_get_active_games.return_value = [
+                ('game1', 'tic_tac_toe', '!a_mock_node_id', '!another_mock_node_id'),
+                ('game2', 'connect_four', '!a_mock_node_id', '!another_mock_node_id'),
+            ]
+            mock_get_game_by_id.side_effect = lambda game_id: (
+                ('game1', 'tic_tac_toe', 'X') if game_id == 'game1' else ('game2', 'connect_four', 'X')
+            )
+            # Simulate 3 mail messages
+            mock_get_mail.return_value = [
+                (1, 'MOCK2', 'Subject1', '2025-08-30', 'msgid1'),
+                (2, 'MOCK2', 'Subject2', '2025-08-30', 'msgid2'),
+                (3, 'MOCK2', 'Subject3', '2025-08-30', 'msgid3'),
+            ]
+            mock_count_my_turn_games.return_value = 2
+            state = self.message_processing.process_message(sender_id, 'help', self.interface)
+            self.mock_send_message.assert_called_with(unittest.mock.ANY, sender_id, self.interface)
+            call_args, _ = self.mock_send_message.call_args
+            menu_text = call_args[0]
+            expected_menu = textwrap.dedent("""\
+                💾TC² BBS💾 (✉️:3) 🕹️:2
+                [Q]uick Commands
+                [B]BS
+                [U]tilities
+                [G]ames
+                E[X]IT
+            """)
+            self.assertEqual(menu_text.strip(), expected_menu.strip())
+            self.assertEqual(state['command'], 'MAIN_MENU')
 
 if __name__ == '__main__':
     unittest.main()

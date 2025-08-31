@@ -455,3 +455,33 @@ class GameLogicDriver:
             waiting_message = f"Move made. Waiting for opponent {opponent_sn} ({opponent_symbol})."
 
         self._send_game_state_message(sender_id, board_str=board_str, post_board_text=waiting_message)
+
+def count_my_turn_games(game_type, node_id, interface):
+    """
+    Counts the number of active games of a specific type where it's the given node's turn.
+
+    Args:
+        game_type (str): The type of the game (e.g., 'tic_tac_toe', 'connect_four').
+        node_id (str): The ID of the node to check.
+        interface: The interface object for interacting with the system.
+
+    Returns:
+        int: The count of games where it's the node's turn.
+    """
+    active_games = get_active_games_by_type(game_type)
+    my_turn_count = 0
+
+    for game in active_games:
+        game_id, _, p_x_id, p_o_id = game
+        game_data = get_game_by_id(game_id)
+        if not game_data:
+            continue
+
+        # game_data[2] is the current turn ('X' or 'O')
+        current_turn = game_data[2] if len(game_data) > 2 else None
+        if current_turn == 'X' and p_x_id == node_id:
+            my_turn_count += 1
+        elif current_turn == 'O' and p_o_id == node_id:
+            my_turn_count += 1
+
+    return my_turn_count

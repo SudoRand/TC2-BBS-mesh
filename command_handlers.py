@@ -19,7 +19,7 @@ from utils import (
 )
 from modules.Games.tic_tac_toe import handle_tic_tac_toe_command
 from modules.Games.connect_four import handle_connect_four_command, ConnectFourGame
-from modules.Games.game_logic_driver import GameLogicDriver
+from modules.Games.game_logic_driver import GameLogicDriver, count_my_turn_games
 from modules.Games.tic_tac_toe import TicTacToeGame
 
 # Read the configuration for menu options
@@ -50,7 +50,7 @@ def build_menu(items, menu_name):
             menu_str += "[RG]eturn to Game\n"
         elif item.strip() == 'T':
             menu_str += "[T]ic Tac Toe\n"
-        elif item.strip() == 'C' and menu_name == "🎮Games Menu🎮":
+        elif item.strip() == 'C' and menu_name == "🕹️Games Menu🕹️":
             menu_str += "[C]onnect 4\n"
         elif item.strip() == 'X':
             menu_str += "E[X]IT\n"
@@ -76,7 +76,7 @@ def handle_help_command(sender_id, interface, menu_name=None):
         elif menu_name == 'utilities':
             response = build_menu(utilities_menu_items, "🛠️Utilities Menu🛠️")
         elif menu_name == 'games':
-            response = build_menu(games_menu_items, "🎮Games Menu🎮")
+            response = build_menu(games_menu_items, "🕹️Games Menu🕹️")
     else:
         state = get_user_state(sender_id)
         if not state or 'command' not in state or state['command'] != 'MAIN_MENU':
@@ -95,28 +95,18 @@ def handle_help_command(sender_id, interface, menu_name=None):
 
         mail = get_mail(get_node_id_from_num(sender_id, interface))
 
-        active_games_list = get_active_games(limit=3)
-        total_active_games = count_active_games()
 
-        active_games_str = ""
-        if active_games_list:
-            active_games_str = "\n\n--- Active Games ---\n"
-            for game_id, game_type, p_x_id, p_o_id in active_games_list:
-                p_x_sn = get_node_short_name(p_x_id, interface) if p_x_id else "N/A"
-                p_o_sn = get_node_short_name(p_o_id, interface) if p_o_id else "N/A"
-                game_name = "C4" if game_type == 'connect_four' else "TTT"
-                active_games_str += f"{game_name} ({game_id}): {p_x_sn} vs {p_o_sn}\n"
-            if total_active_games > 3:
-                active_games_str += f"...and {total_active_games - 3} more.\n"
+        # Count games where it's the current node's turn
+        node_id = get_node_id_from_num(sender_id, interface)
+        my_turn_count = count_my_turn_games('tic_tac_toe', node_id, interface)
 
-        response = build_menu(current_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)})")
-        response = active_games_str + response
+        response = build_menu(current_menu_items, f"💾TC² BBS💾 (✉️:{len(mail)}) 🕹️:{my_turn_count}")
 
     send_message(response, sender_id, interface)
 
 
 def handle_games_command(sender_id, interface):
-    response = build_menu(games_menu_items, "🎮Games Menu🎮")
+    response = build_menu(games_menu_items, "🕹️Games Menu🕹️")
     send_message(response, sender_id, interface)
     update_user_state(sender_id, {'command': 'MENU', 'menu': 'games', 'step': 1})
 
@@ -347,13 +337,23 @@ def handle_mail_steps(sender_id, message, step, state, interface, bbs_nodes):
             handle_help_command(sender_id, interface)
 
     elif step == 2:
-        mail_id = int(message)
+        if message.lower() == 'help':
+            handle_help_command(sender_id, interface)
+            return
+        elif message.lower() == 'x':
+            update_user_state(sender_id, None)
+            send_message("Exiting mail menu.", sender_id, interface)
+            return
         try:
+            mail_id = int(message)
             sender_node_id = get_node_id_from_num(sender_id, interface)
             sender, date, subject, content, unique_id = get_mail_content(mail_id, sender_node_id)
             send_message(f"Date: {date}\nFrom: {sender}\nSubject: {subject}\n{content}", sender_id, interface)
             send_message("What would you like to do with this message?\n[K]eep  [D]elete  [R]eply", sender_id, interface)
             update_user_state(sender_id, {'command': 'MAIL', 'step': 4, 'mail_id': mail_id, 'unique_id': unique_id, 'sender': sender, 'subject': subject, 'content': content})
+        except ValueError:
+            send_message("Invalid input. Please enter a message number, 'help', or 'x' to exit.", sender_id, interface)
+            update_user_state(sender_id, {'command': 'MAIL', 'step': 2})
         except TypeError:
             logging.info(f"Node {sender_id} tried to access non-existent message")
             send_message("Mail not found", sender_id, interface)
